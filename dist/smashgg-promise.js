@@ -1,5 +1,4 @@
 var smashgg = Object;
-
 var request = function(type, url, data){
     return new Promise(function(resolve, reject){
         var xhttp = new XMLHttpRequest();
@@ -28,8 +27,33 @@ var request = function(type, url, data){
 }
 
 /** TOURNAMENTS */
+var getAllEvents = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
+var getAllSets = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
+var getAllPlayers = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
 var parseDataToTournament = function(data){
     var tournament = Object;
+    data = JSON.parse(data);
+    tournament.prototype.data = data;
+
+    tournament.prototype.getAllPlayers = getAllPlayers;
+    tournament.prototype.getAllSets = getAllSets;
+    tournament.prototype.getAllEvents = getAllEvents;
+
     tournament.prototype.getId = function(){
         return data.entities.tournament['id'];
     }
@@ -112,8 +136,27 @@ smashgg.prototype.getTournament = function(tournamentName, expands){
 }
 
 /** EVENTS */
+
+var getEventPhases = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
+var getEventPhaseGroups = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
 var parseDataToEvent = function(data){
     let event = Object;
+    data = JSON.parse(data);
+    event.prototype.data = data;
+
+    event.prototype.getEventPhases = getEventPhases;
+    event.prototype.getEventPhaseGroups = getEventPhaseGroups;
+
     event.prototype.getName = function(){
         return data.entities.tournament['name'];
     }
@@ -180,8 +223,20 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
 }
 
 /** PHASES */
+
+var getPhaseGroups = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
 var parseDataToPhase = function(data){
     let phase = Object;
+    data = JSON.parse(data);
+    phase.prototype.data = data;
+
+    phase.prototype.getPhaseGroups = getPhaseGroups;
+
     phase.prototype.getName = function(){
         return new Date(data.entities.tournament['name']);
     }
@@ -222,8 +277,27 @@ smashgg.prototype.getPhase = function(id, expands){
 }
 
 /** PHASE GROUPS */
+
+var getPlayers = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
+var getSets = function(){
+    return new Promise(function(resolve, reject){
+        //TODO implement
+    })
+}
+
 var parseDataToPhaseGroup = function(data){
     let phasegroup = Object;
+    data = JSON.parse(data);
+    phasegroup.prototype.data = data;
+
+    phasegroup.prototype.getPlayers = getPlayers;
+    phasegroup.prototype.getSets = getSets;
+
     phasegroup.prototype.getPhaseId = function(){
         return new Date(data.entities.tournament['phaseId']);
     }
@@ -261,4 +335,14 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
                 return reject(err);
             })
     })
+}
+
+/** Sets */
+var parseDataToSet = function(data){
+    //TODO implement
+}
+
+/** Players */
+var parseDataToPlayer = function(data){
+    //TODO implement
 }
