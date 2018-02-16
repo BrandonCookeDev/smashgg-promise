@@ -10,13 +10,19 @@ var request = function(type, url, data){
                 return reject(new Error('Status was non 200: ' + this.status))
             }
         };
-        switch(type){
+        switch(type.toLowerCase()){
             case 'get':
                 xhttp.open("GET", url, true);
+                //xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
+                xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+                xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
                 xhttp.send();
                 break;
             case 'post':
                 xhttp.open("POST", url, true);
+                //xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
+                xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+                xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization");
                 xhttp.send(data);
                 break;
             default:
@@ -118,9 +124,11 @@ smashgg.prototype.getTournament = function(tournamentName, expands){
             groups: (expands && expands.groups) || true,
             stations: (expands && expands.stations) || true
         };
-        for(var property in this.expands){
-            if(expands[property])
-                expandsString += 'expand[]=property&';
+        for(var i in expands){
+            var property = i;
+            if(expands[property] instanceof Function) break;
+            else if(expands[property])
+                expandsString += 'expand[]=' + property + '&';
         }
 
         var url = 'https://api.smash.gg/tournament/' + tournamentName + '?' + expandsString;
@@ -129,7 +137,7 @@ smashgg.prototype.getTournament = function(tournamentName, expands){
                 return resolve(parseDataToTournament(data));
             })
             .catch(function(err){
-                console.error('Smashgg Tournament: ' + e);
+                console.error('Smashgg Tournament: ' + err);
                 return reject(err);
             })
     })
@@ -196,9 +204,11 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
             phase: (expands && expands.phase) || true,
             groups: (expands && expands.groups) || true
         };
-        for(var property in expands){
-            if(expands[property])
-                expandsString += format('expand[]=%s&', property);
+        for(var i = 0; i < expands.length; i++){
+            var property = i;
+            if(expands[property] instanceof Function) break;
+            else if(expands[property])
+                expandsString += 'expand[]=' + property + '&';
         }
 
         smashgg.getTournament(tournamentName)
@@ -260,8 +270,10 @@ smashgg.prototype.getPhase = function(id, expands){
             groups: (expands && expands.groups) || true
         };
         for(var property in expands){
-            if(expands[property])
-                expandsString += format('expand[]=%s&', property);
+            var property = i;
+            if(expands[property] instanceof Function) break;
+            else if(expands[property])
+                expandsString += 'expand[]=' + property + '&';
         }
 
         var url = 'https://api.smash.gg/phase/' + id + "?" + expandsString;
@@ -321,8 +333,10 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
             seeds: (expands && expands.seeds) || true
         };
         for(var property in expands){
-            if(expands[property])
-                expandsString += format('expand[]=%s&', property);
+            var property = i;
+            if(expands[property] instanceof Function) break;
+            else if(expands[property])
+                expandsString += 'expand[]=' + property + '&';
         }
 
         var url = 'https://api.smash.gg/phase_group/' + id + "?" + expandsString;
@@ -331,7 +345,7 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
                 return resolve(parseDataToPhaseGroup(data));
             })
             .catch(function(err){
-                console.error('Smashgg Phase Group: ' + e);
+                console.error('Smashgg Phase Group: ' + err);
                 return reject(err);
             })
     })
