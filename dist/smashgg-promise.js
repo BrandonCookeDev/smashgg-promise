@@ -2,6 +2,23 @@ var smashgg = Object;
 var request = function(type, url, data){
     return new Promise(function(resolve, reject){
         var xhttp = new XMLHttpRequest();
+        
+        switch(type.toLowerCase()){
+            case 'get':
+                xhttp.open("GET", url, true);
+                break;
+            case 'post':
+                xhttp.open("POST", url, true);
+                break;
+            default:
+                console.log('Only GET and POST supported currently');
+                break;
+        }
+
+        xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
+        xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+        xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization");
+        
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
                 return resolve(this.responseText);
@@ -10,25 +27,7 @@ var request = function(type, url, data){
                 return reject(new Error('Status was non 200: ' + this.status))
             }
         };
-        switch(type.toLowerCase()){
-            case 'get':
-                xhttp.open("GET", url, true);
-                //xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
-                xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-                xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
-                xhttp.send();
-                break;
-            case 'post':
-                xhttp.open("POST", url, true);
-                //xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
-                xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-                xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization");
-                xhttp.send(data);
-                break;
-            default:
-                console.log('Only GET and POST supported currently');
-                break;
-        }
+        xhttp.send(data);
     })
 }
 
