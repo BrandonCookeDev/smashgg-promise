@@ -15,6 +15,7 @@
     <script src="smashgg-promise.js"></script> <!-- used via express -->
     <script src="./test.js"></script>
 
+    <!--
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.17.1/axios.js"></script>
     <script>
         axios.get('http://api.smash.gg/tournament/to12?expand[]=event&expand[]=phase&expand[]=groups&expand[]=stations&')
@@ -25,12 +26,13 @@
                 console.error('AXIOS: %s', err);
             })
 
-        axios.get('http://www.google.com')
+        axios.get('https://cdnjs.cloudflare.com/ajax/libs/axios/0.17.1/axios.js')
             .then(data => {
-                console.log('google worked');
+                console.log('axios worked');
             })
             .catch(err => {
                 console.error('AXIOS: google failed');
             })
     </script>
+    -->
 </html>
