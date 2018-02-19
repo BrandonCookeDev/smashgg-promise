@@ -1,34 +1,27 @@
 var smashgg = Object;
-var request = function(type, url, data){
-    return new Promise(function(resolve, reject){
-        var xhttp = new XMLHttpRequest();
-        
-        switch(type.toLowerCase()){
-            case 'get':
-                xhttp.open("GET", url, true);
-                break;
-            case 'post':
-                xhttp.open("POST", url, true);
-                break;
-            default:
-                console.log('Only GET and POST supported currently');
-                break;
-        }
-
-        xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
-        xhttp.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-        xhttp.setRequestHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization");
-        
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                return resolve(this.responseText);
-            }
-            else{
-                return reject(new Error('Status was non 200: ' + this.status))
+var request = function(method, url, data){
+    return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(method, url);
+        xhr.onload = function () {
+            if (this.status >= 200 && this.status < 300) {
+                resolve(xhr.response);
+            } else {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
             }
         };
-        xhttp.send(data);
-    })
+        xhr.onerror = function () {
+            reject({
+                status: this.status,
+                statusText: xhr.statusText
+            });
+        };
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(JSON.stringify(data));
+    });
 }
 
 /** TOURNAMENTS */
@@ -130,8 +123,13 @@ smashgg.prototype.getTournament = function(tournamentName, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
-        var url = 'https://api.smash.gg/tournament/' + tournamentName + '?' + expandsString;
-        request('GET', url)
+        //var url = 'https://api.smash.gg/tournament/' + tournamentName + '?' + expandsString;
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/tournament'
+        var postParams = {
+            tournamentName: tournamentName,
+            expands: expands
+        }
+        request('POST', url, postParams)
             .then(function(data){
                 return resolve(parseDataToTournament(data));
             })
@@ -210,6 +208,22 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/events';
+        var postParams = {
+            tournamentName: tournamentName,
+            eventName: eventName,
+            expands: expands
+        }
+        request('POST', url, postParams)
+            .then(function(data){
+                return resolve(parseDataToTournament(data));
+            })
+            .catch(function(err){
+                console.error('Smashgg Tournament: ' + err);
+                return reject(err);
+            })
+
+        /*
         smashgg.getTournament(tournamentName)
             .then(function(tournament){
                 var slug = tournament.getSlug();
@@ -228,6 +242,7 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
                 console.error('Smashgg Event: ' + err);
                 return reject(err);
             })
+            */
     })
 }
 
@@ -275,13 +290,18 @@ smashgg.prototype.getPhase = function(id, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
-        var url = 'https://api.smash.gg/phase/' + id + "?" + expandsString;
-        request('GET', url)
+        //var url = 'https://api.smash.gg/phase/' + id + "?" + expandsString;
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
+        var postParams = {
+            id: id,
+            expands: expands
+        }
+        request('POST', url, postParams)
             .then(function(data){
-                return resolve(parseDataToPhase(data));
+                return resolve(parseDataToTournament(data));
             })
             .catch(function(err){
-                console.error('Smashgg Phase: ' + err);
+                console.error('Smashgg Tournament: ' + err);
                 return reject(err);
             })
     })
@@ -338,13 +358,17 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
-        var url = 'https://api.smash.gg/phase_group/' + id + "?" + expandsString;
-        request('GET', url)
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/events';
+        var postParams = {
+            id: id,
+            expands: expands
+        }
+        request('POST', url, postParams)
             .then(function(data){
-                return resolve(parseDataToPhaseGroup(data));
+                return resolve(parseDataToTournament(data));
             })
             .catch(function(err){
-                console.error('Smashgg Phase Group: ' + err);
+                console.error('Smashgg Tournament: ' + err);
                 return reject(err);
             })
     })

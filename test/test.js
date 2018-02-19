@@ -64,9 +64,10 @@ smashgg.getTournament('to12')
         ]
         
         var listitems = [];
-        $.each(info, function(object){
-            var el = '<li><label>' + object.key + '</label>: ' + object.value + '</li>';
+        $.each(info, function(i, item){
+            var el = '<li><label>' + item.key + '</label>: ' + item.value + '</li>';
             listitems.push(el);
         })
+        $('#tournamentName').append( to12.getName() );
         $('#tournamentInfoList').append( listitems.join('') );
     })
