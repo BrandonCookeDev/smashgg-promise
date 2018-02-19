@@ -163,28 +163,24 @@ var parseDataToEvent = function(data){
     event.prototype.getEventPhaseGroups = getEventPhaseGroups;
 
     event.prototype.getName = function(){
-        return data.entities.tournament['name'];
+        return data.entities.event['name'];
     }
 
     event.prototype.getSlug = function(){
-        return data.entities.tournament['slug'];
+        return data.entities.event['slug'];
     }
 
     event.prototype.getStartTime = function(){
-        return new Date(data.entities.tournament['startAt']);
+        return new Date(data.entities.event['startAt']);
     }
 
     event.prototype.getEndTime = function(){
-        return new Date(data.entities.tournament['endAt']);
+        return new Date(data.entities.event['endAt']);
     }
     return event;
 }
 
 smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
-
-    const EVENT_URL = 'https://api.smash.gg/event/%s?%s';
-    const EVENT_SLUG_URL = "https://api.smash.gg/%s/event/%s?%s";
-
     return new Promise(function(resolve, reject){
         if(!tournamentName)
             return reject(new Error('Tournament Name cannot be null for Event'));
@@ -192,8 +188,6 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
             return reject(new Error('Event Name cannot be null for Event'));
 
         var data = {};
-        var tournamentName = tournamentName;
-        var eventName = eventName;
 
         // CREATE THE EXPANDS STRING
         var expandsString = "";
@@ -208,7 +202,7 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
-        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/events';
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
         var postParams = {
             tournamentName: tournamentName,
             eventName: eventName,
@@ -216,7 +210,7 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
         }
         request('POST', url, postParams)
             .then(function(data){
-                return resolve(parseDataToTournament(data));
+                return resolve(parseDataToEvent(data));
             })
             .catch(function(err){
                 console.error('Smashgg Tournament: ' + err);
@@ -262,10 +256,10 @@ var parseDataToPhase = function(data){
     phase.prototype.getPhaseGroups = getPhaseGroups;
 
     phase.prototype.getName = function(){
-        return new Date(data.entities.tournament['name']);
+        return new Date(data.entities.phase['name']);
     }
     phase.prototype.getEventId = function(){
-        return new Date(data.entities.tournament['eventId']);
+        return new Date(data.entities.phase['eventId']);
     }
     return phase;
 }
@@ -276,7 +270,6 @@ smashgg.prototype.getPhase = function(id, expands){
             return reject(new Error('ID cannot be null for Phase Group'));
 
         var data = {};
-        var id = id;
 
         // CREATE THE EXPANDS STRING
         var expandsString = "";
@@ -298,7 +291,7 @@ smashgg.prototype.getPhase = function(id, expands){
         }
         request('POST', url, postParams)
             .then(function(data){
-                return resolve(parseDataToTournament(data));
+                return resolve(parseDataToPhase(data));
             })
             .catch(function(err){
                 console.error('Smashgg Tournament: ' + err);
@@ -330,7 +323,7 @@ var parseDataToPhaseGroup = function(data){
     phasegroup.prototype.getSets = getSets;
 
     phasegroup.prototype.getPhaseId = function(){
-        return new Date(data.entities.tournament['phaseId']);
+        return new Date(data.entities.group['phaseId']);
     }
     return phasegroup;
 }
@@ -341,7 +334,6 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
             return reject(new Error('ID cannot be null for Phase Group'));
 
         var data = {};
-        var id = id;
 
         // CREATE THE EXPANDS STRING
         var expandsString = "";
@@ -358,14 +350,14 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
                 expandsString += 'expand[]=' + property + '&';
         }
 
-        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/events';
+        var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phasegroup';
         var postParams = {
             id: id,
             expands: expands
         }
         request('POST', url, postParams)
             .then(function(data){
-                return resolve(parseDataToTournament(data));
+                return resolve(parseDataToPhaseGroup(data));
             })
             .catch(function(err){
                 console.error('Smashgg Tournament: ' + err);

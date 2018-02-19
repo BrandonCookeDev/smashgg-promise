@@ -71,3 +71,47 @@ smashgg.getTournament('to12')
         $('#tournamentName').append( to12.getName() );
         $('#tournamentInfoList').append( listitems.join('') );
     })
+    .catch(console.error);
+
+smashgg.getEvent('to12', 'melee-singles')
+    .then(to12event => {
+        var info = [
+            {
+                key: 'Name',
+                value: to12event.getName()
+            },
+            {
+                key: 'Slug',
+                value: to12event.getSlug()
+            },
+            {
+                key: 'Start Time',
+                value: to12event.getStartTime()
+            },
+            {
+                key: 'End Time',
+                value: to12event.getEndTime()
+            }
+        ]
+
+        var listitems = [];
+        $.each(info, function(i, item){
+            var el = '<li><label>' + item.key + '</label>: ' + item.value + "</li>";
+            listitems.push(el);
+        })
+        $('#eventName').append( to12event.getName() );
+        $('#eventInfoList').append(listitems.join(''));
+    })
+    .catch(console.error);
+
+smashgg.getPhase(100046)
+    .then(to12phase => {
+
+    })
+    .catch(console.error);
+
+smashgg.getPhaseGroup(301994)
+    .then(to12phasegroup => {
+
+    })
+    .catch(console.error)
