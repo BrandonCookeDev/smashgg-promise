@@ -106,7 +106,24 @@ smashgg.getEvent('to12', 'melee-singles')
 
 smashgg.getPhase(100046)
     .then(to12phase => {
+        var info = [
+            {
+                key: 'Name',
+                value: to12phase.getName()
+            },
+            {
+                key: 'EventId',
+                value: to12phase.getEventId()
+            }
+        ]
 
+        var listitems = [];
+        $.each(info, function(i, item){
+            var el = '<li><label>' + item.key + '</label>: ' + item.value + "</li>";
+            listitems.push(el);
+        })
+        $('#phaseName').append( to12phase.getName() );
+        $('#phaseInfoList').append(listitems.join(''));
     })
     .catch(console.error);
 

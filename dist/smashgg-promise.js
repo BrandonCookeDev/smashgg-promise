@@ -116,8 +116,7 @@ smashgg.prototype.getTournament = function(tournamentName, expands){
             groups: (expands && expands.groups) || true,
             stations: (expands && expands.stations) || true
         };
-        for(var i in expands){
-            var property = i;
+        for(var property in expands){
             if(expands[property] instanceof Function) break;
             else if(expands[property])
                 expandsString += 'expand[]=' + property + '&';
@@ -195,8 +194,7 @@ smashgg.prototype.getEvent = function(tournamentName, eventName, expands){
             phase: (expands && expands.phase) || true,
             groups: (expands && expands.groups) || true
         };
-        for(var i = 0; i < expands.length; i++){
-            var property = i;
+        for(var property in expands){
             if(expands[property] instanceof Function) break;
             else if(expands[property])
                 expandsString += 'expand[]=' + property + '&';
@@ -277,7 +275,6 @@ smashgg.prototype.getPhase = function(id, expands){
             groups: (expands && expands.groups) || true
         };
         for(var property in expands){
-            var property = i;
             if(expands[property] instanceof Function) break;
             else if(expands[property])
                 expandsString += 'expand[]=' + property + '&';
@@ -344,7 +341,6 @@ smashgg.prototype.getPhaseGroup = function(id, expands){
             seeds: (expands && expands.seeds) || true
         };
         for(var property in expands){
-            var property = i;
             if(expands[property] instanceof Function) break;
             else if(expands[property])
                 expandsString += 'expand[]=' + property + '&';
