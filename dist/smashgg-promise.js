@@ -26,20 +26,44 @@ var request = function(method, url, data){
 
 /** TOURNAMENTS */
 var getAllEvents = function(){
-    return new Promise(function(resolve, reject){
-        //TODO implement
+    var events = this.data.entities.event;
+
+    var eventObjects = [];
+    events.forEach(event => {
+        eventObjects.push(parseDataToEvent(JSON.stringify(event)));
     })
+
+    return eventObjects;
 }
 
 var getAllSets = function(){
+    var ThisTournament = this;
     return new Promise(function(resolve, reject){
-        //TODO implement
+        var groups = ThisTournament.data.entities.groups;
+
+        var promises = [];
+        groups.forEach(group => {
+            var p = getPhaseGroup(group.id);
+            promises.push(p); 
+        })
+
+        Promise.all(promises)
+            .then(allGroups => {
+                var sets = [];
+                allGroups.forEach(group => {
+                    group.sets.forEach(set => {
+                        sets.push(parseDataToSet(set));
+                    })
+                })
+                return resolve(sets);
+            })
+            .catch(reject);
     })
 }
 
 var getAllPlayers = function(){
     return new Promise(function(resolve, reject){
-        //TODO implement
+       
     })
 }
 
@@ -47,10 +71,6 @@ var parseDataToTournament = function(data){
     var tournament = Object;
     data = JSON.parse(data);
     tournament.prototype.data = data;
-
-    tournament.prototype.getAllPlayers = getAllPlayers;
-    tournament.prototype.getAllSets = getAllSets;
-    tournament.prototype.getAllEvents = getAllEvents;
 
     tournament.prototype.getId = function(){
         return data.entities.tournament['id'];
@@ -97,6 +117,11 @@ var parseDataToTournament = function(data){
     tournament.prototype.getProcessingFee = function(){
         return data.entities.tournament['processingFee'];
     }
+
+    tournament.prototype.getAllPlayers = getAllPlayers.bind(tournament);
+    tournament.prototype.getAllSets = getAllSets.bind(tournament);
+    tournament.prototype.getAllEvents = getAllEvents.bind(tournament);
+
     return tournament;
 }
 
