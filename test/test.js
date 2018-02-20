@@ -62,6 +62,10 @@ smashgg.getTournament('to12')
                 value: to12.getProcessingFee()
             },
         ]
+
+        var events = to12.getAllEvents();
+
+        var sets = to12.getAllSets();
         
         var listitems = [];
         $.each(info, function(i, item){
@@ -129,6 +133,6 @@ smashgg.getPhase(100046)
 
 smashgg.getPhaseGroup(301994)
     .then(to12phasegroup => {
-
+        
     })
     .catch(console.error)
