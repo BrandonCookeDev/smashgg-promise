@@ -59,7 +59,7 @@ class Tournament{
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/tournament'
             var postParams = {
                 tournamentName: tournamentName,
-                expands: expands
+                expands: expandsObj
             }
             request('POST', url, postParams)
                 .then(function(data){
@@ -129,9 +129,7 @@ class Tournament{
             })
 
             Promise.all(promises)
-                .then(allEvents => {
-                    return resolve(allEvents);
-                })
+                .then(resolve)
                 .catch(console.error);
         })
     }
@@ -143,19 +141,18 @@ class Tournament{
     
             var promises = [];
             groups.forEach(group => {
-                var p = getPhaseGroup(group.id);
-                promises.push(p); 
+                promises.push(PhaseGroup.get(group.id)); 
             })
     
             Promise.all(promises)
                 .then(allGroups => {
-                    var sets = [];
+                    var setsPromises = [];
                     allGroups.forEach(group => {
-                        group.sets.forEach(set => {
-                            sets.push(parseDataToSet(set));
-                        })
+                        setsPromises.push(group.getSets());
                     })
-                    return resolve(sets);
+                    Promise.all(setsPromises)
+                        .then(resolve)
+                        .catch(reject);
                 })
                 .catch(reject);
         })
@@ -203,7 +200,7 @@ class Event{
             var postParams = {
                 tournamentName: tournamentName,
                 eventName: eventName,
-                expands: expands
+                expands: expandsObj
             }
             request('POST', url, postParams)
                 .then(function(data){
@@ -278,7 +275,7 @@ class Phase{
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
             var postParams = {
                 id: id,
-                expands: expands
+                expands: expandsObj
             }
             request('POST', url, postParams)
                 .then(function(data){
@@ -339,7 +336,7 @@ class PhaseGroup{
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phasegroup';
             var postParams = {
                 id: id,
-                expands: expands
+                expands: expandsObj
             }
             request('POST', url, postParams)
                 .then(function(data){
@@ -358,15 +355,99 @@ class PhaseGroup{
     getPlayers(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
-            //TODO implement
-        })
+            if(ThisPhaseGroup.players)
+                return resolve(ThisPhaseGroup.players);
+
+            let players = [];
+            ThisPhaseGroup.data.entities.entrants.forEach(entrant => {
+                let P = Player.resolve(entrant);
+                players.push(P);
+            });
+            ThisPhaseGroup.players = players;
+            return resolve(players);
+        });
     }
     
     getSets(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
-            //TODO implement
+            var promises = [];
+            ThisPhaseGroup.data.entities.sets.forEach(set => {
+                if (!set.entrant1Id || !set.entrant2Id)
+                    return; // HANDLES BYES
+                var p = new Promise(function(resolve, reject){
+                    let winnerId = 
+                        set.entrant1Score > set.entrant2Score ? 
+                            set.entrant1Id : 
+                            set.entrant2Id;
+                    let loserId = 
+                        winnerId != set.entrant1Id ? 
+                            set.entrant1Id : set.entrant2Id;
+
+                    ThisPhaseGroup.findWinnerLoserByParticipantIds(winnerId, loserId)
+                        .then(setPlayers => {
+                            if (!setPlayers.winnerPlayer || !setPlayers.loserPlayer)
+                                return reject('Both winner and loser player must be populated'); 
+                                // HANDLES Error of some sort
+
+                            let S = new Set(
+                                set.id, 
+                                set.eventId, 
+                                set.fullRoundText, 
+                                WinnerPlayer, 
+                                LoserPlayer,
+                                set
+                            );
+                            return resolve(S);
+                        })
+                        .catch(reject);
+                    })
+                promises.push(p);
+            });
+
+            Promise.all(promises)
+                .then(resolve)
+                .catch(console.error);
         })
+    }
+
+    findWinnerLoserByParticipantIds(winnerId, loserId){
+        var ThisPhaseGroup = this;
+        return new Promise(function(resolve, reject){
+            ThisPhaseGroup.getPlayers()
+                .then(players => {
+                    let winnerPlayer = players.filter(e => {e.participantId == winnerId});
+                    if(winnerPlayer.length)
+                        winnerPlayer = player[0];
+                    else return reject(new Error('No player for id ' + winnerId));
+
+                    loserPlayer = players.filter(e => {e.participantId == loserId});
+                    if(loserPlayer.length)
+                        loserPlayer = player[0];
+                    else return reject(new Error('No player for id ' + loserId));
+                    
+                    return resolve({
+                        winnerPlayer: winnerPlayer,
+                        loserPlayer: loserPlayer
+                    })
+                    
+                })
+                .catch(console.error)
+            });
+    }
+
+    findPlayersByParticipantId(id){
+        var ThisPhaseGroup = this;
+        return new Promise(function(resolve, reject){
+            ThisPhaseGroup.getPlayers()
+                .then(players => {
+                    let player = players.filter(e => {e.participantId == id});
+                    if(player.length)
+                        return player[0];
+                    else throw new Error('No Player with id ' + id);
+                })
+                .catch(console.error)
+            });
     }
 }
 
@@ -458,32 +539,40 @@ class Player{
         this.sponsor = sponsor;
         this.participantId = participantId;
 
-        this.data = data;
+        if(data)
+            this.data = JSON.parse(data);
     }
 
     static resolve(data){
-        let playerId = 0;
-        let participantId = 0;
+        try{
+            let playerId = 0;
+            let participantId = 0;
 
-        //for(let id in data.mutations.participants)
-        //    participantId = id;
+            //for(let id in data.mutations.participants)
+            //    participantId = id;
 
-        for(let id in data.mutations.players)
-            playerId = id;
+            for(let id in data.mutations.players){
+                if(isNaN(parseInt(id))) break;
+                playerId = id;
+            }
 
-        let playerDetails = data.mutations.players[playerId];
+            let playerDetails = data.mutations.players[playerId];
 
-        let P = new Player(
-            parseInt(playerId),
-            playerDetails.gamerTag,
-            playerDetails.name,
-            playerDetails.country,
-            playerDetails.state,
-            playerDetails.prefix,
-            parseInt(data.id)
-        );
-        P.loadData(data);
-        return P;
+            let P = new Player(
+                parseInt(playerId),
+                playerDetails.gamerTag,
+                playerDetails.name,
+                playerDetails.country,
+                playerDetails.state,
+                playerDetails.prefix,
+                parseInt(data.id),
+                JSON.stringify(data)
+            );
+            return P;
+        } catch(e){
+            console.error(e.message);
+            throw e;
+        }
     }
 
     getId(){

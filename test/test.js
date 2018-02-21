@@ -63,9 +63,21 @@ smashgg.getTournament('to12')
             },
         ]
 
-        var events = to12.getAllEvents();
+        to12.getAllEvents();
 
-        var sets = to12.getAllSets();
+        to12.getAllSets()
+            .then(sets => {
+                var tableitems = [];
+                $.each(info, function(i, item){
+                    var el = 
+                        '<tr><td>' + item.getWinner().getTag() + '</td>' +
+                        '<td>' + item.getWinnerScore() + '</td>' +
+                        '<td>' + item.getLoserScore() + '</td>' + 
+                        '<td>' + item.getLoser().getTag() + "</td></tr>"
+                    tableitems.push(el);
+                })
+                $('#setsTable').append( tableitems.join('') );
+            }).catch(console.error)
         
         var listitems = [];
         $.each(info, function(i, item){
