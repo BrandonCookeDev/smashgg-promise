@@ -151,7 +151,13 @@ class Tournament{
                         setsPromises.push(group.getSets());
                     })
                     Promise.all(setsPromises)
-                        .then(resolve)
+                        .then(groupSets => {
+                            var allSets = [];
+                            groupSets.forEach(setArray => {
+                                allSets = allSets.concat(setArray);
+                            })
+                            return resolve(allSets);
+                        })
                         .catch(reject);
                 })
                 .catch(reject);
@@ -396,7 +402,7 @@ class PhaseGroup{
                                 set.fullRoundText, 
                                 setPlayers.winnerPlayer, 
                                 setPlayers.loserPlayer,
-                                set
+                                JSON.stringify(set)
                             );
                             return resolve(S);
                         })
@@ -441,7 +447,7 @@ class PhaseGroup{
         return new Promise(function(resolve, reject){
             ThisPhaseGroup.getPlayers()
                 .then(players => {
-                    let player = players.filter(e => {e.participantId == id});
+                    let player = players.filter(e => {return e.participantId == id});
                     if(player.length)
                         return player[0];
                     else throw new Error('No Player with id ' + id);
