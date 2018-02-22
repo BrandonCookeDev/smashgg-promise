@@ -322,10 +322,10 @@ class PhaseGroup{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                sets: (expands && expands.sets) || true,
-                entrants: (expands && expands.entrants) || true,
-                standings: (expands && expands.standings) || true,
-                seeds: (expands && expands.seeds) || true
+                sets: (expands && expands.sets) ? expands.sets : true,
+                entrants: (expands && expands.entrants) ? expands.entrants : true,
+                standings: (expands && expands.standings) ? expands.standings : true,
+                seeds: (expands && expands.seeds) ? expands.seeds : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
@@ -394,8 +394,8 @@ class PhaseGroup{
                                 set.id, 
                                 set.eventId, 
                                 set.fullRoundText, 
-                                WinnerPlayer, 
-                                LoserPlayer,
+                                setPlayers.winnerPlayer, 
+                                setPlayers.loserPlayer,
                                 set
                             );
                             return resolve(S);
@@ -418,12 +418,12 @@ class PhaseGroup{
                 .then(players => {
                     let winnerPlayer = players.filter(e => {return e.participantId == winnerId});
                     if(winnerPlayer.length)
-                        winnerPlayer = player[0];
+                        winnerPlayer = winnerPlayer[0];
                     else return reject(new Error('No player for id ' + winnerId));
 
-                    loserPlayer = players.filter(e => {return e.participantId == loserId});
+                    let loserPlayer = players.filter(e => {return e.participantId == loserId});
                     if(loserPlayer.length)
-                        loserPlayer = player[0];
+                        loserPlayer = loserPlayer[0];
                     else return reject(new Error('No player for id ' + loserId));
                     
                     return resolve({
