@@ -70,13 +70,16 @@ smashgg.getTournament('to12')
                 var tableitems = [];
                 $.each(sets, function(i, item){
                     var el = 
-                        '<tr><td>' + item.getWinner().getTag() + '</td>' +
+                        '<tr>' +
+                        '<td>' + item.getWinner().getTag() + '</td>' +
                         '<td>' + item.getWinnerScore() + '</td>' +
                         '<td>' + item.getLoserScore() + '</td>' + 
-                        '<td>' + item.getLoser().getTag() + "</td></tr>"
-                    tableitems.push(el);
+                        '<td>' + item.getLoser().getTag() + '</td>' +
+                        '</tr>'
+                    //tableitems.push(el);
+                    $('#setsTable').append( el );
                 })
-                $('#setsTable').append( tableitems.join('') );
+                //$('#setsTable tr:last').append( tableitems.join('') );
             }).catch(console.error)
         
         var listitems = [];
