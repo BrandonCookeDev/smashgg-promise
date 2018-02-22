@@ -416,12 +416,12 @@ class PhaseGroup{
         return new Promise(function(resolve, reject){
             ThisPhaseGroup.getPlayers()
                 .then(players => {
-                    let winnerPlayer = players.filter(e => {e.participantId == winnerId});
+                    let winnerPlayer = players.filter(e => {return e.participantId == winnerId});
                     if(winnerPlayer.length)
                         winnerPlayer = player[0];
                     else return reject(new Error('No player for id ' + winnerId));
 
-                    loserPlayer = players.filter(e => {e.participantId == loserId});
+                    loserPlayer = players.filter(e => {return e.participantId == loserId});
                     if(loserPlayer.length)
                         loserPlayer = player[0];
                     else return reject(new Error('No player for id ' + loserId));
