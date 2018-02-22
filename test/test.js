@@ -68,7 +68,7 @@ smashgg.getTournament('to12')
         to12.getAllSets()
             .then(sets => {
                 var tableitems = [];
-                $.each(info, function(i, item){
+                $.each(sets, function(i, item){
                     var el = 
                         '<tr><td>' + item.getWinner().getTag() + '</td>' +
                         '<td>' + item.getWinnerScore() + '</td>' +
