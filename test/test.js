@@ -136,6 +136,14 @@ smashgg.getEvent('to12', 'melee-singles')
         })
         $('#eventName').append( to12event.getName() );
         $('#eventInfoList').append(listitems.join(''));
+
+        to12event.getEventPhases().then(phases => {
+            // console.log('Phase Events = ', phases);
+        });
+
+        to12event.getEventPhaseGroups().then(phasegroups => {
+            // console.log('Phase Groups = ', phasegroups );
+        });
     })
     .catch(console.error);
 
@@ -157,13 +165,31 @@ smashgg.getPhase(100046)
             var el = '<li><label>' + item.key + '</label>: ' + item.value + "</li>";
             listitems.push(el);
         })
-        $('#phaseName').append( to12phase.getName() );
+        $('#phaseName').append( to12phase.getName());
         $('#phaseInfoList').append(listitems.join(''));
+        
+        to12phase.getPhaseGroups().then(phaseGroups => {
+            // console.log('Phase Groups: ', phaseGroups);
+        })
     })
     .catch(console.error);
 
 smashgg.getPhaseGroup(301994)
     .then(to12phasegroup => {
-        
+        var info = [
+            {
+                key: 'PhaseId',
+                value: to12phasegroup.getPhaseId()
+            },
+        ];
+        var items = [];
+        $.each(info, function(i, item) {
+            var el = '<li><label>' + item.key + '</label>: ' + item.value + "</li>";
+            items.push(el);
+        });
+        // to12phasegroup.
+        // $('#phaseGroupInfoList').append(to12phasegroup.getPhaseId());
+        $('#phaseGroupInfoList').append(items.join(''));
+        to12phasegroup.get
     })
     .catch(console.error)
