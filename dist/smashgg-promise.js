@@ -166,7 +166,7 @@ class Tournament{
 
     getAllPlayers(){
         return new Promise(function(resolve, reject){
-           
+
         })
     }
 }
@@ -236,17 +236,25 @@ class Event{
     }
 
     getEventPhases(){
-        var ThisEvent = this;
+        let thisEvent = this;
         return new Promise(function(resolve, reject){
-            //TODO implement
-        })
+            let promises = thisEvent.data.entities.phase.map(p => {
+                return Phase.get(p.id);
+            });
+            Promise.all(promises).then(resolve).catch(reject);
+        });
     }
     
     getEventPhaseGroups(){
-        var ThisEvent = this;
+        let thisEvent = this;
         return new Promise(function(resolve, reject){
-            //TODO implement
-        })
+            let promises = thisEvent.data.entities.groups.map(group => {
+                return PhaseGroup.get(group.id);
+            });
+            Promise.all(promises)
+                .then(resolve)
+                .catch(reject);
+        });
     }
 }
 
@@ -295,16 +303,22 @@ class Phase{
     }
 
     getName(){
-        return new Date(this.data.entities.phase['name']);
+        return this.data.entities.phase['name'];
     }
     getEventId(){
-        return new Date(this.data.entities.phase['eventId']);
+        return this.data.entities.phase['eventId'];
     }
 
-    getPhaseGroups (){
-        var ThisPhase = this;
+    getPhaseGroups(){
+        let thisPhase = this;
         return new Promise(function(resolve, reject){
-            //TODO implement
+            let groups = [];thisPhase.data.entities.groups.forEach(group => {
+                let g = PhaseGroup.get(group.id);
+                groups.push(g)
+            });
+            Promise.all(groups)
+                .then(resolve)
+                .catch(reject);
         })
     }
 }
@@ -356,8 +370,9 @@ class PhaseGroup{
     }
 
     getPhaseId(){
-        return new Date(this.data.entities.group['phaseId']);
+        return this.data.entities.groups['phaseId'];
     }
+
     getPlayers(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
