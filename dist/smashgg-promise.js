@@ -164,9 +164,36 @@ class Tournament{
         })
     }
 
+    // Needs to be looked at
     getAllPlayers(){
+        let thisTournament = this;
         return new Promise(function(resolve, reject){
-
+            // Grab all events from tournament
+            let eventPromises = thisTournament.data.entities.event.map(e => {
+                return Event.get(thisTournament.name, e.name);
+            });
+            console.log("Events... ", eventPromises);
+            // Promisify all events
+            Promise.all(eventPromises)
+                // Grab phaseGroups from each event
+                .then(events => {
+                    let phaseGroups = events.map(event => {
+                        return event.getPhaseGroups();
+                    });
+                    console.log('Phase Groups...', phaseGroups);
+                    Promise.all(phaseGroups)
+                        // Work with phaseGroups
+                        .then(groups => {
+                            let players = groups.map(group => {
+                                return group.getPlayers();
+                            });
+                            // Should create a set of unique players
+                            let newPlayers = Array.from(new Set(players));
+                            return resolve(...newPlayers);
+                        })
+                        .catch(reject);
+                })
+                .catch(reject);
         })
     }
 }
