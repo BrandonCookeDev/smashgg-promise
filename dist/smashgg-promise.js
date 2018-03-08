@@ -170,26 +170,35 @@ class Tournament{
         return new Promise(function(resolve, reject){
             // Grab all events from tournament
             let eventPromises = thisTournament.data.entities.event.map(e => {
-                return Event.get(thisTournament.name, e.name);
+                return Event.getEventById(thisTournament.name, e.id);
             });
-            console.log("Events... ", eventPromises);
             // Promisify all events
             Promise.all(eventPromises)
                 // Grab phaseGroups from each event
                 .then(events => {
                     let phaseGroups = events.map(event => {
-                        return event.getPhaseGroups();
+                        return event.getEventPhaseGroups();
                     });
-                    console.log('Phase Groups...', phaseGroups);
+                    // >:(
                     Promise.all(phaseGroups)
                         // Work with phaseGroups
                         .then(groups => {
-                            let players = groups.map(group => {
-                                return group.getPlayers();
-                            });
-                            // Should create a set of unique players
-                            let newPlayers = Array.from(new Set(players));
-                            return resolve(...newPlayers);
+                            Promise.all(groups)
+                                .then(phaseGroups => {
+                                    let playerPromises = [];
+                                    phaseGroups.forEach(groups => {
+                                        groups.forEach(g => {
+                                            playerPromises.push(g.getPlayers());  
+                                        });
+                                    });
+                                    Promise.all(playerPromises)
+                                        .then(allPlayers => {
+                                            // Should give a unique list of players
+                                            let players = [].concat(...allPlayers);
+                                            return resolve(players);
+                                        }).catch(reject);
+                                })
+                                .catch(reject);
                         })
                         .catch(reject);
                 })
@@ -201,7 +210,8 @@ class Tournament{
 /** EVENTS */
 
 class Event{
-    constructor(tournamentName, eventName, expands, data){
+    constructor(tournamentName, eventName, expands, data, eventId){
+        this.eventId = eventId;
         this.tournamentName = tournamentName;
         this.eventName = eventName;
         this.expands = expands;
@@ -237,7 +247,24 @@ class Event{
             }
             request('POST', url, postParams)
                 .then(function(data){
-                    return resolve(new Event(tournamentName, eventName, expandsObj, data));
+                    return resolve(new Event(tournamentName, eventName, expandsObj, data, null));
+                })
+                .catch(function(err){
+                    console.error('Smashgg Tournament: ' + err);
+                    return reject(err);
+                })
+        })
+    }
+
+    static getEventById(tournamentName = null, eventId) {
+        return new Promise(function(resolve, reject){
+            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
+            var postParams = {
+                eventId: eventId,
+            }
+            request('POST', url, postParams)
+                .then(function(data){
+                    return resolve(new Event(tournamentName, data.name, null, data, eventId));
                 })
                 .catch(function(err){
                     console.error('Smashgg Tournament: ' + err);
@@ -438,7 +465,7 @@ class PhaseGroup{
                                 return reject('Both winner and loser player must be populated'); 
                                 // HANDLES Error of some sort
 
-                            let S = new Set(
+                            let S = new Match(
                                 set.id, 
                                 set.eventId, 
                                 set.fullRoundText, 
@@ -500,7 +527,7 @@ class PhaseGroup{
 }
 
 /** Sets */
-class Set{
+class Match{
     constructor(id, eventId, round, WinnerPlayer, LoserPlayer, data){
         if(!id)
             throw new Error('Id for Set cannot be null');
