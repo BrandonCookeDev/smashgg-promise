@@ -134,7 +134,7 @@ class Tournament{
         })
     }
 
-    getAllSets(){
+    getAllMatches(){
         var ThisTournament = this;
         return new Promise(function(resolve, reject){
             var groups = ThisTournament.data.entities.groups;
@@ -148,7 +148,7 @@ class Tournament{
                 .then(allGroups => {
                     var setsPromises = [];
                     allGroups.forEach(group => {
-                        setsPromises.push(group.getSets());
+                        setsPromises.push(group.getMatches());
                     })
                     Promise.all(setsPromises)
                         .then(groupSets => {
@@ -443,7 +443,7 @@ class PhaseGroup{
         });
     }
     
-    getSets(){
+    getMatches(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
             var promises = [];
@@ -526,7 +526,7 @@ class PhaseGroup{
     }
 }
 
-/** Sets */
+/** Match - Represents a tournament set */
 class Match{
     constructor(id, eventId, round, WinnerPlayer, LoserPlayer, data){
         if(!id)
