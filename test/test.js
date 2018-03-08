@@ -67,7 +67,6 @@ smashgg.getTournament('to12')
 
         to12.getAllPlayers()
             .then(players => {
-                console.log("Players In Test => ", players);
                 var tableitems = [];
                 $.each(players, function(i, player){
                     var el = 
@@ -82,9 +81,8 @@ smashgg.getTournament('to12')
             })
             .catch(console.error);
 
-        to12.getAllSets()
+        to12.getAllMatches()
             .then(sets => {
-                console.log('Sets => ', sets);
                 var tableitems = [];
                 $.each(sets, function(i, item){
                     var el = 
