@@ -65,24 +65,26 @@ smashgg.getTournament('to12')
 
         to12.getAllEvents();
 
-        to12.getAllPlayers();
-            // .then(players => {
-            //     var tableitems = [];
-            //     $.each(players, function(i, items){
-            //         var el = 
-            //             '<tr>' + 
-            //             '<td>' + player.getSponsor() + '</td>' +
-            //             '<td>' + player.getTag() + '</td>' +
-            //             '<td>' + player.getName() + '</td>' + 
-            //             '<td>' + player.getState() + '</td>' +
-            //             '</tr>'
-            //         $('#playerTable').append( el );
-            //     })
-            // })
-            // .catch(console.error);
+        to12.getAllPlayers()
+            .then(players => {
+                console.log("Players In Test => ", players);
+                var tableitems = [];
+                $.each(players, function(i, player){
+                    var el = 
+                        '<tr>' + 
+                        '<td>' + player.getSponsor() + '</td>' +
+                        '<td>' + player.getTag() + '</td>' +
+                        '<td>' + player.getName() + '</td>' + 
+                        '<td>' + player.getState() + '</td>' +
+                        '</tr>'
+                    $('#playerTable').append( el );
+                })
+            })
+            .catch(console.error);
 
         to12.getAllSets()
             .then(sets => {
+                console.log('Sets => ', sets);
                 var tableitems = [];
                 $.each(sets, function(i, item){
                     var el = 
