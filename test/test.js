@@ -160,6 +160,10 @@ smashgg.getPhase(100046)
             }
         ]
 
+        // to12phase.getPhasePlayers(100046).then(players => console.log('Phase Players=> ', players));
+        
+        // to12phase.getPhaseSets(100046).then(sets => console.log('Sets: ', sets)).catch(console.error);
+
         var listitems = [];
         $.each(info, function(i, item){
             var el = '<li><label>' + item.key + '</label>: ' + item.value + "</li>";
