@@ -169,7 +169,6 @@ class Tournament{
         let thisTournament = this;
         return new Promise(function(resolve, reject){
             // Grab all events from tournament
-            console.log(thisTournament);
             let eventPromises = thisTournament.data.entities.event.map(currEvent => {
                 return Event.getEventById(thisTournament.name, currEvent.id);
             });
@@ -394,26 +393,20 @@ class Phase{
     getPhasePlayers() {
         let thisPhase = this;
         return new Promise(function(resolve, reject) {
-            // TODO
-            //console.log('SUP FUCKER', thisPhase);
             // get phase groups
             let phasePromises = thisPhase.data.entities.groups.map(group => {
                 return PhaseGroup.get(group.id);
-            })
-            //console.log('All phase groups...', phasePromises);
+            });
             Promise.all(phasePromises)
                 .then(phaseGroups => {
-                    //console.log('Phase Groups: ', phaseGroups);
                     let playerPromises = [];
                     phaseGroups.forEach(group => {
                         playerPromises.push(group.getPlayers());     
                     });
-                    //console.log('Player promises =', playerPromises);
                     Promise.all(playerPromises)
                         .then(allPlayers => {
                             // Should give a unique list of players
                             let players = [].concat(...allPlayers);
-                            //console.log('All players = ', players);
                             return resolve(players);
                         }).catch(reject);
                 })
@@ -424,8 +417,28 @@ class Phase{
     getPhaseSets() {
         let thisPhase = this;
         return new Promise (function(resolve, reject) {
-            // TODO
-
+            let phasePromises = thisPhase.data.entities.groups.map(group => {
+                return PhaseGroup.get(group.id);
+            });
+            Promise.all(phasePromises)
+            .then(phaseGroups => {
+                let setPromises = [];
+                phaseGroups.forEach(group => {
+                    setPromises.push(group.getMatches());
+                })
+                Promise.all(setPromises)
+                .then(phaseSets => {
+                    let allSets = [];
+                    phaseSets.forEach(sets => {
+                        sets.forEach(set => {
+                            allSets.push(set);
+                        })
+                    })
+                    return resolve(allSets);
+                })
+                .catch(reject);
+            })
+            .catch(reject);
         })
     }
 }
