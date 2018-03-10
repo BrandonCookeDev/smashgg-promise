@@ -169,40 +169,54 @@ class Tournament{
         let thisTournament = this;
         return new Promise(function(resolve, reject){
             // Grab all events from tournament
-            let eventPromises = thisTournament.data.entities.event.map(e => {
-                return Event.getEventById(thisTournament.name, e.id);
+            console.log(thisTournament);
+            let eventPromises = thisTournament.data.entities.event.map(currEvent => {
+                return Event.getEventById(thisTournament.name, currEvent.id);
             });
             // Promisify all events
             Promise.all(eventPromises)
-                // Grab phaseGroups from each event
-                .then(events => {
-                    let phaseGroups = events.map(event => {
-                        return event.getEventPhaseGroups();
+            // Grab phaseGroups from each event
+            .then(allEvents => {
+                let allPhasePromises = [];
+                allEvents.forEach(event => {
+                    event.data.entities.phase.forEach(currPhase =>  {
+                        allPhasePromises.push(Phase.get(currPhase.id));
                     });
-                    // >:(
-                    Promise.all(phaseGroups)
-                        // Work with phaseGroups
-                        .then(groups => {
-                            Promise.all(groups)
-                                .then(phaseGroups => {
-                                    let playerPromises = [];
-                                    phaseGroups.forEach(groups => {
-                                        groups.forEach(g => {
-                                            playerPromises.push(g.getPlayers());  
-                                        });
-                                    });
-                                    Promise.all(playerPromises)
-                                        .then(allPlayers => {
-                                            // Should give a unique list of players
-                                            let players = [].concat(...allPlayers);
-                                            return resolve(players);
-                                        }).catch(reject);
-                                })
-                                .catch(reject);
-                        })
-                        .catch(reject);
+                });
+                // Resolve and work with list of phases 
+                Promise.all(allPhasePromises)
+                .then(phases => {
+                    let playerPromises = [];
+                    phases.forEach(phase => {
+                        playerPromises.push(phase.getPhasePlayers());
+                    });
+                    Promise.all(playerPromises)
+                    .then(phasePlayers => {
+                        let allPlayers = [];
+                        phasePlayers.forEach(currPhase => {
+                            currPhase.forEach(players => {
+                                if (!allPlayers.includes(players)) {
+                                    allPlayers.push(players);
+                                }
+                            });
+                        });
+
+                        // Returns a unique list of players
+                        let flags = {};
+                        let players = allPlayers.filter(player => {
+                            if (flags[player.id]) {
+                                return false;
+                            }
+                            flags[player.id] = true;
+                            return true;
+                        });
+                        return resolve(players);
+                    })
+                    .catch(reject);
                 })
                 .catch(reject);
+            })
+            .catch(reject);
         })
     }
 }
@@ -366,13 +380,52 @@ class Phase{
     getPhaseGroups(){
         let thisPhase = this;
         return new Promise(function(resolve, reject){
-            let groups = [];thisPhase.data.entities.groups.forEach(group => {
+            let groups = [];
+            thisPhase.data.entities.groups.forEach(group => {
                 let g = PhaseGroup.get(group.id);
                 groups.push(g)
             });
             Promise.all(groups)
                 .then(resolve)
                 .catch(reject);
+        })
+    }
+
+    getPhasePlayers() {
+        let thisPhase = this;
+        return new Promise(function(resolve, reject) {
+            // TODO
+            //console.log('SUP FUCKER', thisPhase);
+            // get phase groups
+            let phasePromises = thisPhase.data.entities.groups.map(group => {
+                return PhaseGroup.get(group.id);
+            })
+            //console.log('All phase groups...', phasePromises);
+            Promise.all(phasePromises)
+                .then(phaseGroups => {
+                    //console.log('Phase Groups: ', phaseGroups);
+                    let playerPromises = [];
+                    phaseGroups.forEach(group => {
+                        playerPromises.push(group.getPlayers());     
+                    });
+                    //console.log('Player promises =', playerPromises);
+                    Promise.all(playerPromises)
+                        .then(allPlayers => {
+                            // Should give a unique list of players
+                            let players = [].concat(...allPlayers);
+                            //console.log('All players = ', players);
+                            return resolve(players);
+                        }).catch(reject);
+                })
+                .catch(reject);
+        })
+    }
+
+    getPhaseSets() {
+        let thisPhase = this;
+        return new Promise (function(resolve, reject) {
+            // TODO
+
         })
     }
 }
