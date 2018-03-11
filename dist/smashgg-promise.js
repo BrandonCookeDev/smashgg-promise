@@ -44,10 +44,10 @@ class Tournament{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                event: (expands && expands.event) || true,
-                phase: (expands && expands.phase) || true,
-                groups: (expands && expands.groups) || true,
-                stations: (expands && expands.stations) || true
+                event: (expands && expands.event) ? expands.event : true,
+                phase: (expands && expands.phase) ? expands.phase : true,
+                groups: (expands && expands.groups) ? expands.groups : true,
+                stations: (expands && expands.stations) ? expands.stations : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
@@ -243,8 +243,8 @@ class Event{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                phase: (expands && expands.phase) || true,
-                groups: (expands && expands.groups) || true
+                phase: (expands && expands.phase) ? expands.phase : true,
+                groups: (expands && expands.groups) ? expands.groups : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
@@ -344,7 +344,7 @@ class Phase{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                groups: (expands && expands.groups) || true
+                groups: (expands && expands.groups) ? expands.groups : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
