@@ -351,7 +351,6 @@ class Phase{
                     expandsString += 'expand[]=' + property + '&';
             }
     
-            //var url = 'https://api.smash.gg/phase/' + id + "?" + expandsString;
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
             var postParams = {
                 id: id,
@@ -615,7 +614,6 @@ class Match{
             this.data = JSON.parse(data);
     }
 
-
     getRound(){
         return this.round;
     }
@@ -687,9 +685,6 @@ class Player{
         try{
             let playerId = 0;
             let participantId = 0;
-
-            //for(let id in data.mutations.participants)
-            //    participantId = id;
 
             for(let id in data.mutations.players){
                 if(isNaN(parseInt(id))) break;
