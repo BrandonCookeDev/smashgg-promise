@@ -164,7 +164,6 @@ class Tournament{
         })
     }
 
-    // Needs to be looked at
     getAllPlayers(){
         let thisTournament = this;
         return new Promise(function(resolve, reject){
