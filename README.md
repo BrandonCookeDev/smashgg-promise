@@ -1,4 +1,4 @@
-# smashgg.js
+# smashgg-promise
 ## Author: Brandon Cooke & Jarrod Blanton
 
 smashgg-promise is an alternative to the [smash.gg](https://github.com/BrandonCookeDev/smashgg.js) library. Smashgg-Promise provides Promise functionality to the created smashgg object.
