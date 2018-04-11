@@ -3,14 +3,16 @@
 
 smashgg-promise is an alternative to the [smash.gg](https://github.com/BrandonCookeDev/smashgg.js) library. Smashgg-Promise provides Promise functionality to the created smashgg object.
 
+
+## Requirements
+* ecmascript 6
+* NodeJS (optional)
+
 ## Installation
+- NodeJS
 ```bash
 npm install --save smashgg-promise
 ```
-
-## Requirements
-* Node.js 7+
-* ecmascript 6
 
 ## Issues
 * Please submit any issues or feature requests to the [Issues Section of the Github](https://github.com/BrandonCookeDev/smashgg-promise/issues)
