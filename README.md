@@ -1,15 +1,22 @@
 # smashgg-promise
 ## Author: Brandon Cooke & Jarrod Blanton
 
-smashgg-promise is an alternative to the [smash.gg](https://github.com/BrandonCookeDev/smashgg.js) library. Smashgg-Promise provides Promise functionality to the created smashgg object.
+smashgg-promise is an alternative to the [smash.gg](https://github.com/BrandonCookeDev/smashgg.js) library.
+Smashgg-Promise provides Promise functionality to the created smashgg object, and is usable on browsers.
 
+## Version
+- 1.1.0
+    - File has changed to implement AWS Lambda instead of a static server. If you are on 1.0.0, it is imperative that you upgrade your version now.
+    All server operations will be terminated by end of day 4/12/2018 in lieu of the new lambda implementation. This will make 1.0.0 non-operational.
+    You do not have to do anything besides upgrade your version. No code changes besides where the data comes from has been made.
 
 ## Requirements
 * ecmascript 6
 * NodeJS (optional)
 
 ## Installation
-- NodeJS
+- Download and use in project
+- NodeJS (optional)
 ```bash
 npm install --save smashgg-promise
 ```
