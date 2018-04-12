@@ -1,6 +1,6 @@
 {
   "name": "smashgg-promise",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A single-file, es6 javascript that allows for frontend use of Smash.gg's public api",
   "main": "dist/smashgg-promise.js",
   "directories": {

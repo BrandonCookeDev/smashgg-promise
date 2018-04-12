@@ -37,8 +37,6 @@ npm install --save smashgg-promise
 
 ## Example 
 ```javascript
-var smashgg = Object;
-
 smashgg.getTournament('to12')
     .then(to12 => {
         to12.getAllPlayers()
@@ -113,34 +111,6 @@ Name: Davis Robertson
 
 ```
 
-## Integrations
-### Winston
-If you would like to add a Winston log that accesses the API's Winston implementation, you may do the following
-```javascript
-let log = require('winston');
-let transports = {
-    file: {
-        level: info,
-        filename: '/tmp/smashgg-promise.log',
-        handleExceptions: true,
-        json: false,
-        maxsize: 5242880, //5MB
-        colorize: false
-    },
-    console: {
-        level: debug,
-        json: false,
-        colorize: true,
-        handleExceptions: true
-    }
-};
-
-log.remove(log.transports.Console); //Remove the default implementation
-
-log.add(log.transports.Console, transports.console); //Add new Console implementation
-log.add(log.transports.File, transports.file); //Add new File implementation
-```
-
 # Docs
 ## Tournament
 A Tournament in smash-promise is a collection of Events, Phases, and Phases Groups that
@@ -148,8 +118,6 @@ categorize different games played, game types within those games, and the matche
 make up those games.
 
 ```javascript
-var smashgg = Object;
-
 smashgg.getTournament('to12')
     .then(to12 => {
         // Do stuff with tournament
@@ -281,8 +249,6 @@ A phase in smash-promise is a subset of matches and brackets inside an Event. Fo
 a wave in pools is a Phase. Everything in that Phase is a Group (or Phase Group).
 
 ```javascript
-let smashgg = Object;
-
 smashgg.getPhase(100046)
     .then(to12phase => {
         var info = [
@@ -331,8 +297,6 @@ smashgg.getPhase(100046)
 A Phase Group is the lowest unit on smash.gg. It is a bracket of some sort that belongs to a Phase.
 
 ```javascript
-let smashgg = Object; 
-
 smashgg.getPhaseGroup(301994)
     .then(to12phasegroup => {
         // Do stuff with phase group
