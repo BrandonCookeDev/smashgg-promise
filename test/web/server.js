@@ -6,7 +6,7 @@ var path = require('path');
 var app = express()
 
 app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, '..', 'dist')))
+app.use(express.static(path.join(__dirname, '..', '..', 'dist')))
 
 app.listen(8000, function(err){
     if(!err)

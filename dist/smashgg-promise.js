@@ -1,5 +1,7 @@
 var smashgg = Object;
 
+const API_URL = 'https://i9nvyv08rj.execute-api.us-west-2.amazonaws.com/prod/smashgg-lambda';
+
 var request = function(method, url, data){
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
@@ -44,24 +46,24 @@ class Tournament{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                event: (expands && expands.event) ? expands.event : true,
-                phase: (expands && expands.phase) ? expands.phase : true,
-                groups: (expands && expands.groups) ? expands.groups : true,
-                stations: (expands && expands.stations) ? expands.stations : true
+                event: (expands && expands.event == false) ? false : true,
+                phase: (expands && expands.phase == false) ? false : true,
+                groups: (expands && expands.groups == false) ? false : true,
+                stations: (expands && expands.stations == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            //var url = 'https://api.smash.gg/tournament/' + tournamentName + '?' + expandsString;
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/tournament'
+
             var postParams = {
+                type: 'tournament',
                 tournamentName: tournamentName,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Tournament(name, expandsObj, data));
                 })
@@ -242,22 +244,24 @@ class Event{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                phase: (expands && expands.phase) ? expands.phase : true,
-                groups: (expands && expands.groups) ? expands.groups : true
+                phase: (expands && expands.phase == false) ? false : true,
+                groups: (expands && expands.groups == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
+
+
             var postParams = {
+                type: 'event',
                 tournamentName: tournamentName,
                 eventName: eventName,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Event(tournamentName, eventName, expandsObj, data, null));
                 })
@@ -343,7 +347,7 @@ class Phase{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                groups: (expands && expands.groups) ? expands.groups : true
+                groups: (expands && expands.groups == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
@@ -353,10 +357,12 @@ class Phase{
     
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
             var postParams = {
+                type: 'phase',
                 id: id,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Phase(id, expandsObj, data));
                 })
@@ -460,23 +466,24 @@ class PhaseGroup{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                sets: (expands && expands.sets) ? expands.sets : true,
-                entrants: (expands && expands.entrants) ? expands.entrants : true,
-                standings: (expands && expands.standings) ? expands.standings : true,
-                seeds: (expands && expands.seeds) ? expands.seeds : true
+                sets: (expands && expands.sets == false) ? false : true,
+                entrants: (expands && expands.entrants == false) ? false : true,
+                standings: (expands && expands.standings == false) ? false : true,
+                seeds: (expands && expands.seeds == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phasegroup';
+
             var postParams = {
+                type: 'phasegroup',
                 id: id,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new PhaseGroup(id, expandsObj, data));
                 })
