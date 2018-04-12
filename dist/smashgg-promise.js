@@ -23,7 +23,7 @@ var request = function(method, url, data){
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify(data));
     });
-}
+};
 
 /** TOURNAMENTS */
 class Tournament{
@@ -748,3 +748,5 @@ smashgg.prototype.getTournament = Tournament.get;
 smashgg.prototype.getEvent = Event.get;
 smashgg.prototype.getPhase = Phase.get;
 smashgg.prototype.getPhaseGroup = PhaseGroup.get;
+
+module.exports = smashgg;

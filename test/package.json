@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "test.js",
-  "scripts": {
-  },
+  "scripts": {},
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chai": "^4.1.2",
     "express": "^4.16.2",
     "fs": "0.0.1-security",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "smashgg.js": "^1.0.6",
+    "window": "^4.2.5",
+    "xmlhttprequest": "^1.8.0"
   }
 }
