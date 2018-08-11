@@ -68,7 +68,7 @@ class Tournament{
                     return resolve(new Tournament(name, expandsObj, data));
                 })
                 .catch(function(err){
-                    console.error('Smashgg Tournament: ' + err);
+                    console.error('Smashgg Tournament: ' + err.message);
                     return reject(err);
                 })
         })
@@ -266,7 +266,7 @@ class Event{
                     return resolve(new Event(tournamentName, eventName, expandsObj, data, null));
                 })
                 .catch(function(err){
-                    console.error('Smashgg Event: ' + err);
+                    console.error('Smashgg Event: ' + err.message);
                     return reject(err);
                 })
         })
@@ -283,7 +283,7 @@ class Event{
                     return resolve(new Event(tournamentName, data.name, null, data, eventId));
                 })
                 .catch(function(err){
-                    console.error('Smashgg Event: ' + err);
+                    console.error('Smashgg Event: ' + err.message);
                     return reject(err);
                 })
         })
@@ -367,7 +367,7 @@ class Phase{
                     return resolve(new Phase(id, expandsObj, data));
                 })
                 .catch(function(err){
-                    console.error('Smashgg Phase: ' + err);
+                    console.error('Smashgg Phase: ' + err.message);
                     return reject(err);
                 })
         })
@@ -488,7 +488,7 @@ class PhaseGroup{
                     return resolve(new PhaseGroup(id, expandsObj, data));
                 })
                 .catch(function(err){
-                    console.error('Smashgg Phase: ' + err);
+                    console.error('Smashgg Phase: ' + err.message);
                     return reject(err);
                 })
         })
