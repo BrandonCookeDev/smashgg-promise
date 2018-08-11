@@ -521,6 +521,15 @@ class PhaseGroup{
                 //var p = new Promise(function(resolve, reject){
                 let isComplete = set.completedAt != null;
                 
+                let winnerId = !isComplete ? null : 
+                        set.entrant1Score > set.entrant2Score ? 
+                            set.entrant1Id : 
+                            set.entrant2Id;
+                    
+                let loserId = !isComplete ? null : 
+                    winnerId != set.entrant1Id ? 
+                        set.entrant1Id : set.entrant2Id;
+
                 let S = new Set(
                     set.id, 
                     set.eventId, 
@@ -530,8 +539,8 @@ class PhaseGroup{
                     isComplete,
                     set.entrant1Score,
                     set.entrant2Score,
-                    set.entrant1Id,
-                    set.entrant2Id,
+                    winnerId,
+                    loserId,
                     JSON.stringify(set)
                 );
                 return S;
@@ -583,8 +592,6 @@ class PhaseGroup{
 /** Sets */
 class Set{
     constructor(id, eventId, round, player1, player2, isComplete=false, score1=0, score2=0, winnerId, loserId, data){
-		super();
-
 		if(!id)
 			throw new Error('Id for Set cannot be null');
 		if(!eventId)
@@ -614,12 +621,12 @@ class Set{
         return this.round;
     }
 
-    getWinner(){
-        return this.WinnerPlayer;
+    getWinnerId(){
+        return this.winnerId;
     }
 
-    getLoser(){
-        return this.LoserPlayer;
+    getLoserId(){
+        return this.loserId;
     }
 
     getGames(){
@@ -631,11 +638,11 @@ class Set{
     }
 
     getWinnerScore(){
-        return this.data.entrant1Score > this.data.entrant2Score ? this.data.entrant1Score : this.data.entrant2Score;
+        return this.score1 > this.score2 ? this.score1 : this.score2;
     }
 
     getLoserScore(){
-        return this.data.entrant1Score < this.data.entrant2Score ? this.data.entrant1Score : this.data.entrant2Score;
+        return this.score1 < this.score2 ? this.score2 : this.score1;
     }
 
     getBracketId(){
@@ -650,6 +657,7 @@ class Set{
         return this.data.phaseGroupId;
     }
 
+    /*
     getWinnersTournamentPlacement(){
         return this.WinnerPlayer.getFinalPlacement();
     }
@@ -657,6 +665,7 @@ class Set{
     getLosersTournamentPlacement(){
         return this.LoserPlayer.getFinalPlacement();
     }
+    */
 
     getCompletedAt(){
         return this.data.completedAt;

@@ -68,11 +68,7 @@ smashgg.getTournament('to12')
         to12.getAllPlayers()
             .then(players => {
                 var tableitems = [];
-<<<<<<< HEAD:test/test.js
-                $.each(players, function(i, items){
-=======
                 $.each(players, function(i, player){
->>>>>>> 543c7571c2c05aea5e8bda33fde7c12ecaa736c7:test/web/test.js
                     var el = 
                         '<tr>' + 
                         '<td>' + player.getSponsor() + '</td>' +
