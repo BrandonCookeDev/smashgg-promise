@@ -193,7 +193,10 @@ class Tournament{
                         })
                         .catch(reject);
                 })
-                .catch(reject);
+                .catch(function(e){
+                    console.error('eventPromises failed: ' + e.message);
+                    console.error(e.stack);
+                });
         })
     }
 }
@@ -201,7 +204,8 @@ class Tournament{
 /** EVENTS */
 
 class Event{
-    constructor(tournamentName, eventName, expands, data){
+    constructor(id, tournamentName, eventName, expands, data){
+        this.id = id;
         this.tournamentName = tournamentName;
         this.eventName = eventName;
         this.expands = expands;
@@ -231,13 +235,53 @@ class Event{
     
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
             var postParams = {
+                eventId: null,
                 tournamentName: tournamentName,
                 eventName: eventName,
                 expands: expandsObj
             }
             request('POST', url, postParams)
                 .then(function(data){
-                    return resolve(new Event(tournamentName, eventName, expandsObj, data));
+                    return resolve(new Event(data.id, tournamentName, eventName, expandsObj, data));
+                })
+                .catch(function(err){
+                    console.error('Smashgg Tournament: ' + err);
+                    return reject(err);
+                })
+        })
+    }
+
+    static getById(id, tournamentName, expands){
+        return new Promise(function(resolve, reject){
+            if(!tournamentName)
+                return reject(new Error('Tournament Name cannot be null for Event'));
+            if(!eventName)
+                return reject(new Error('Event Name cannot be null for Event'));
+    
+            var data = {};
+    
+            // CREATE THE EXPANDS STRING
+            var expandsString = "";
+            var expandsObj = {
+                phase: (expands && expands.phase) || true,
+                groups: (expands && expands.groups) || true
+            };
+            for(var property in expandsObj){
+                if(expandsObj[property] instanceof Function) break;
+                else if(expandsObj[property])
+                    expandsString += 'expand[]=' + property + '&';
+            }
+    
+            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
+            var postParams = {
+                eventId: id,
+                tournamentName: tournamentName,
+                eventName: eventName,
+                expands: expandsObj
+            }
+            request('POST', url, postParams)
+                .then(function(data){
+                    return resolve(new Event(id, tournamentName, eventName, expandsObj, data));
                 })
                 .catch(function(err){
                     console.error('Smashgg Tournament: ' + err);
@@ -419,44 +463,27 @@ class PhaseGroup{
     getSets(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
-            var promises = [];
-            ThisPhaseGroup.data.entities.sets.forEach(set => {
-                if (!set.entrant1Id || !set.entrant2Id)
-                    return; // HANDLES BYES
-                var p = new Promise(function(resolve, reject){
-                    let winnerId = 
-                        set.entrant1Score > set.entrant2Score ? 
-                            set.entrant1Id : 
-                            set.entrant2Id;
-                    let loserId = 
-                        winnerId != set.entrant1Id ? 
-                            set.entrant1Id : set.entrant2Id;
-
-                    ThisPhaseGroup.findWinnerLoserByParticipantIds(winnerId, loserId)
-                        .then(setPlayers => {
-                            if (!setPlayers.winnerPlayer || !setPlayers.loserPlayer)
-                                return reject('Both winner and loser player must be populated'); 
-                                // HANDLES Error of some sort
-
-                            let S = new Set(
-                                set.id, 
-                                set.eventId, 
-                                set.fullRoundText, 
-                                setPlayers.winnerPlayer, 
-                                setPlayers.loserPlayer,
-                                JSON.stringify(set)
-                            );
-                            return resolve(S);
-                        })
-                        .catch(reject);
-                    })
-                promises.push(p);
-            });
-
-            Promise.all(promises)
-                .then(resolve)
-                .catch(console.error);
-        })
+            let sets = ThisPhaseGroup.data.entities.sets.map(set => {
+                //var p = new Promise(function(resolve, reject){
+                let isComplete = set.completedAt != null;
+                
+                let S = new Set(
+                    set.id, 
+                    set.eventId, 
+                    set.fullRoundText, 
+                    set.entrant1,
+                    set.entrant2,
+                    isComplete,
+                    set.entrant1Score,
+                    set.entrant2Score,
+                    set.entrant1Id,
+                    set.entrant2Id,
+                    JSON.stringify(set)
+                );
+                return S;
+            })
+            return resolve(sets);
+        });
     }
 
     findWinnerLoserByParticipantIds(winnerId, loserId){
@@ -501,26 +528,32 @@ class PhaseGroup{
 
 /** Sets */
 class Set{
-    constructor(id, eventId, round, WinnerPlayer, LoserPlayer, data){
-        if(!id)
-            throw new Error('Id for Set cannot be null');
-        if(!eventId)
-            throw new Error('Event Id for Set cannot be null');
-        if(!round)
-            throw new Error('Round for Set cannot be null');
-        if(!WinnerPlayer && !(WinnerPlayer instanceof Player))
-            throw new Error('Winner Player for Set cannot be null, and must be an instance of Player.js');
-        if(!LoserPlayer && !(LoserPlayer instanceof Player))
-            throw new Error('Loser Player for Set cannot be null, and must be an instance of Player.js');
+    constructor(id, eventId, round, player1, player2, isComplete=false, score1=0, score2=0, winnerId, loserId, data){
+		super();
 
-        this.id = id;
-        this.eventId = eventId;
-        this.round = round;
-        this.WinnerPlayer = WinnerPlayer;
-        this.LoserPlayer = LoserPlayer;
+		if(!id)
+			throw new Error('Id for Set cannot be null');
+		if(!eventId)
+			throw new Error('Event Id for Set cannot be null');
+		if(!round)
+			throw new Error('Round for Set cannot be null');
+		if(!player1 && !(player1 instanceof Player))
+			throw new Error('Winner Player for Set cannot be null, and must be an instance of Player');
+		if(!player2 && !(player2 instanceof Player))
+			throw new Error('Loser Player for Set cannot be null, and must be an instance of Player');
 
-        if(data)
-            this.data = JSON.parse(data);
+		this.id = id;
+		this.eventId = eventId;
+		this.round = round;
+		this.player1 = player1;
+		this.player2 = player2;
+		this.score1 = score1;
+		this.score2 = score2;
+		this.isComplete = isComplete;
+		this.winnerId = winnerId;
+		this.loserId = loserId;
+
+		this.data = data;
     }
 
 
@@ -570,6 +603,14 @@ class Set{
 
     getLosersTournamentPlacement(){
         return this.LoserPlayer.getFinalPlacement();
+    }
+
+    getCompletedAt(){
+        return this.data.completedAt;
+    }
+
+    getStartedAt(){
+        return this.data.startedAt;
     }
 }
 
