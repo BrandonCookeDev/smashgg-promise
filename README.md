@@ -1,20 +1,28 @@
-# smashgg.js
-## Author: Brandon Cooke
+# smashgg-promise
+## Author: Brandon Cooke & Jarrod Blanton
 
-smashgg.js is a Node.js wrapper for the public Smash.gg API, which is rich
-with data about tournament brackets that have occurred on their platform.
+smashgg-promise is an alternative to the [smash.gg](https://github.com/BrandonCookeDev/smashgg.js) library.
+Smashgg-Promise provides Promise functionality to the created smashgg object, and is usable on browsers.
 
-## Installation
-```bash
-npm install --save smashgg.js
-```
+## Version
+- 1.1.0
+    - File has changed to implement AWS Lambda instead of a static server. If you are on 1.0.0, it is imperative that you upgrade your version now.
+    All server operations will be terminated by end of day 4/12/2018 in lieu of the new lambda implementation. This will make 1.0.0 non-operational.
+    You do not have to do anything besides upgrade your version. No code changes besides where the data comes from has been made.
 
 ## Requirements
-* Node.js 7+
 * ecmascript 6
+* NodeJS (optional)
+
+## Installation
+- Download and use in project
+- NodeJS (optional)
+```bash
+npm install --save smashgg-promise
+```
 
 ## Issues
-* Please submit any issues or feature requests to the [Issues Section of the Github](https://github.com/BrandonCookeDev/smashgg.js/issues)
+* Please submit any issues or feature requests to the [Issues Section of the Github](https://github.com/BrandonCookeDev/smashgg-promise/issues)
 
 ## Contents
 - [Example](#example)
@@ -29,143 +37,97 @@ npm install --save smashgg.js
 
 ## Example 
 ```javascript
-var smashgg = require('smashgg.js');
-var tournament = new smashgg.Tournament('ceo-2016');
+smashgg.getTournament('to12')
+    .then(to12 => {
+        to12.getAllPlayers()
+        .then(players => {
+            var playerCount = players.length;
+            console.log(`${playerCount} players entered Tipped Off 12`);
+            // Log basic info about every player
+            players.forEach(player => {
+                console.log(
+                    'Name: ' + player.getName() + '\n',
+                    'Tag: ' + player.getTag() + '\n',
+                    'State: ' + player.getState() + '\n'
+                );
+            })
+        })
+        .catch(err => console.error(err));
 
-tournament.on('ready', async function(){
-    var players = await tournament.getAllPlayers();
-    var sets = await tournament.getAllSets();
-
-    console.log(players.length + ' players entered ' + tournament.getName() +  ' overall');
-    players.forEach(player => {
-        console.log(
-            'Tag: ' + player.getTag() + '\n',
-            'Name: ' + player.getName() + '\n',
-            'State: ' + player.getState() + '\n'
-        )
-    });
-
-    console.log(sets.length + ' sets were played at ' + tournament.getName());
-    sets.forEach(set => {
-            console.log(
-                '[%s: %s %s - %s %s]',
-            set.getRound(),
-            set.getWinner().getTag(), //Player object
-            set.getWinnerScore(),
-            set.getLoserScore(),
-            set.getLoser().getTag()
-        );
-        console.log(
-            '%s placed %s at the tournament \n%s placed %s at the tournament\n',
-            set.getWinner().getTag(),
-            set.getWinnersTournamentPlacement(),
-            set.getLoser().getTag(),
-            set.getLosersTournamentPlacement()
-        )
+        to12.getAllMatches()
+            .then(matches => {
+                console.log(`${sets.length} total matches were played at Tipped Off 12`);
+                matches.forEach(match => {
+                    console.log(
+                        // Get score
+                        `[${match.getRound() + ': ' + match.getWinner().getTag() + ' ' + match.getWinnerScore() + ' - ' + match.getLoserScore() + ' ' + match.getLoser().getTag()}] \n`,
+                        // Get winner final placement
+                        `${match.getWinner().getTag()} placed  ${match.getWinner().getFinalPlacement()} \n`,
+                        // Get loser final placement
+                        `${match.getLoser().getTag()} placed ${match.getLoser().getFinalPlacement()} \n`
+                    );
+                })
+            })
+            .catch(err => console.error(err));
     })
-
-    console.log('Done!');
-    return process.exit(0);
-});
-
-tournament.on('error', function(err){
-    console.error('An error occurred: ' + err);
+.catch(error => {
+    console.error('An error occurred: ', error);
 })
 ```
 
 ##### Output
 ```
-2592 players entered CEO 2016 overall
-Tag: Gwabs
- Name: Ian Chiong
- State: FL
+370 players entered Tipped Off 12
 
-Tag: Benteezy
- Name: Benny Frias
- State: NY
+Name: Grayson Garrett
+ Tag: Gas$
+ State: GA
 
-Tag: Jinzo
- Name: Gene Zhou
- State: FL
+Name: Austin Crews
+ Tag: Gladiator
+ State: GA
 
-.... continues ....
-
-8150 sets were played at CEO 2016
-[Losers Semi-Final: Haus 2 - 1 Benteezy]
-Haus placed 33 at the tournament
-Benteezy placed 97 at the tournament
-
-[Winners Round 2: Benteezy 2 - 0 Sabelan]
-Benteezy placed 97 at the tournament
-Sabelan placed 257 at the tournament
-
-[Losers Quarter-Final: Benteezy 2 - 0 NIX]
-Benteezy placed 97 at the tournament
-NIX placed 129 at the tournament
+Name: Davis Robertson
+ Tag: NIX
+ State: SC
 
 .... continues ....
 
-```
+1393 total matches were played at Tipped Off 12
 
-## Integrations
-### Winston
-If you would like to add a Winston log that accesses the API's Winston implementation, you may do the following
-```javascript
-let log = require('winston');
-let transports = {
-    file: {
-        level: info,
-        filename: '/tmp/smashgg.js.log',
-        handleExceptions: true,
-        json: false,
-        maxsize: 5242880, //5MB
-        colorize: false
-    },
-    console: {
-        level: debug,
-        json: false,
-        colorize: true,
-        handleExceptions: true
-    }
-};
+[Winners Round 1: Cloud-9 0 - -1 T] 
+ Cloud-9 placed  97 
+ T placed 129 
 
-log.remove(log.transports.Console); //Remove the default implementation
+[Winners Round 1: DarkGenex 2 - 0 TheGromm] 
+ DarkGenex placed  65 
+ TheGromm placed 193 
 
-log.add(log.transports.Console, transports.console); //Add new Console implementation
-log.add(log.transports.File, transports.file); //Add new File implementation
+[Winners Round 1: Gas$ 2 - 0 Ghost] 
+ Gas$ placed  49 
+ Ghost placed 129 
+
+.... continues ....
+
 ```
 
 # Docs
 ## Tournament
-A Tournament in smash.gg is a collection of Events, Phases, and Phases Groups that
+A Tournament in smash-promise is a collection of Events, Phases, and Phases Groups that
 categorize different games played, game types within those games, and the matches that
 make up those games.
 
 ```javascript
-var to12 = new smashgg.Tournament('to12');
-to12.on('ready', function(){
-    //tournament is populated with data
-    console.log('Got tournament ' + tournament.getName();
-});
+smashgg.getTournament('to12')
+    .then(to12 => {
+        // Do stuff with tournament
+    })
+    .catch(e => console.error(e));
 
-var ceo2016 = new smashgg.Tournament(
-    'ceo-2016',
-    {
-        event: true,
-        phase: false,
-        groups: false,
-        stations: false
-    },
-    false
-);
-ceo2016.on('ready', function(){
-    //do stuff with ceo2016
-})
 ```
 
 ### Constructor
-* **Tournament(tournamentName [,expands, isCached]);**
-
+* **Tournament(name, exands, data);**
     * **tournamentName** [required] - name slug or short tournament name
         * a slug is a string that uniquely identifies a tournament on the platform
             * ex: ceo-2016
@@ -176,37 +138,25 @@ ceo2016.on('ready', function(){
         * phase - boolean -condensed data for the phases that comprise the events
         * groups - boolean -condensed data for the groups that comprise the phases
         * stations - boolean -condensed data for the stations for each group
-    * **isCached** - boolean parameter for if the api should cache the resulting object
-
-### Properties
-* **data** - a copy of the raw Tournament JSON that comprises this object
-* **name** - the tournament name from the constructor
-* **isCached** - True/False value of if the object should be cached
-* **expands** - Object that asks smash.gg for more info when api is called
-* **expandsString** - url encoded string version of the expands object
-* **url** - smash.gg api url used to create this Tournament object
-
-### Events
-* **'ready'**
-    * indicates when the Tournament object is populated with data
-* **'error'**
-    * indicates an error occurred when creating the Tournament
-    * returns an Error object to be used by the user
+    * **data** - JSON string containing all of the information received from the XHR to the smashgg API.
 
 ### Methods
 #### Promises
-* **getAllPlayers([fromCacheTF])**
-    * Returns a Promise that resolves an array of all `Player` objects that partook in the Tournament
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
+* **get(tournamentName, expands)**
+    * Returns a Promise that resolves the data retrieved from the XHR to the smashgg API.
+    * **Params**:
+        * **tournamentName** [required]: name of the tournament. Either slug or shorthand.
+        * **expdands** (optional)
 
-* **getAllSets([fromCacheTF])**
-    * Returns a Promise that resolves an array of all `Set` objects that took place in the Tournament
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
-
-
-* **getAllEvents([fromCacheTF])**
+* **getAllEvents()**
     * Returns a Promise that resolves an array of all `Events` objects that are part of the Tournament.
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
+
+* **getAllMatches()**
+    * Returns a Promise that resolves an array of all `Match` objects that took place in the Tournament. 
+    * **NOTE**: Matches represent a set in order to prevent overriding of 'Set' class.
+
+* **getAllPlayers()**
+    * Returns a Promise that resolves an array of all `Player` objects that partook in the Tournament.
 
 #### Getters
 * **getId()**
@@ -241,32 +191,23 @@ ceo2016.on('ready', function(){
     * return the cost of the processing fee to register for the tournament
 
 ## Event
-An Event in smash.gg is a broad collection of matches for a single game and game type.
+An Event in smash-promise is a broad collection of matches for a single game and game type.
 For instance, Melee Singles is an Event while Melee Doubles is another Event. Events
 are comprised of optional Phases and Phases Groups.
 
 ```javascript
-var event1 = new smashgg.Event('to12', 'melee-singles');
-event1.on('ready', function(){
-    //do stuff with event1
-})
-
-var event2 = new smashgg.Event(
-    'ceo-2106',
-    'melee-singles',
-    {
-        phase: true,
-        groups: false
-    },
-    false
-);
-event2.on('ready', function(){
-    //do stuff with event2
-}
+smashgg.getEvent('to12', 'melee-singles')
+    .then(to12event => { 
+        to12event.getEventPhases().then(phases => {
+            // Do stuff with event phases
+        })
+        .catch(e => console.error(e));
+    })
+    .catch(e => console.error(e));
 ```
 
 ### Constructor
-* **Event(tournamentName, eventName [, expands, isCached])**
+* **Event(tournamentName, eventName, expands, data, eventId)**
     * **tournamentName** [required] - tournament slug or shorthand name of the tournament
         * slug: ceo-2016
         * shorthand: to12 (for tipped-off-12-presented-by-the-lab-gaming-center)
@@ -275,33 +216,23 @@ event2.on('ready', function(){
     * **expands** - an object that defines which additional data is sent back. By default all values are marked true.
         * phase - boolean -condensed data for the phases that comprises the event
         * groups - boolean -condensed data for the groups that comprise the phases
-    * **isCached** - boolean value for if the resulting object should be cached
-
-### Properties
-* **data** - a copy of the raw Event JSON that comprises this object
-* **tournamentName** - the tournament name from the constructor, to which this event belongs
-* **eventName** - the event name from the constructor
-* **isCached** - True/False value of if the object should be cached
-* **expands** - Object that asks smash.gg for more info when api is called
-* **expandsString** - url encoded string version of the expands object
-* **url** - smash.gg api url used to create this Event object
-* **tournamentSlug** - the api slug for the tournament to which this event belongs
-
-### Events
-* **'ready'**
-    * indicates when the Event object is populated with data
-* **'error'**
-    * indicates an error occurred when creating the Event
-    * returns an Error object to be used by the user
+    * **data** - JSON string containing all of the information received from the XHR to the smashgg API.
+    * **eventId** - optional parameter that can be passed in in order to call **getEventById()** rather than default **get()** method.
 
 ### Methods
 #### Promises
-* **getEventPhases([fromCacheTF])**
+* **getEvent(tournamentName, eventName, expands)**
+    * Returns a Promise resolving the JSON data obtained from the XHR to the smashgg API endpoint.
+
+* **getEventById(tournamentName = null, eventId)**
+    * An alternative to **getEvent()** that makes use of the event's ID in order to make a request to the smashgg API. 
+    * Returns a Promise resolving the JSON data retrieved from the XHR to the API.
+
+* **getEventPhases()**
     * Returns a Promise resolving an array of `Phase` objects for this Event
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
-* **getEventPhaseGroups([fromCacheTF])**
+
+* **getEventPhaseGroups()**
     * Returns a Promise resolving an array of `PhaseGroup` objects for this Event
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
 
 #### Getters
 * **getName()**
@@ -314,54 +245,47 @@ event2.on('ready', function(){
     * returns a date string (MM-DD-YYYY HH:mm:ss tz) for when the event is set to end
 
 ## Phase
-A phase in smash.gg is a subset of matches and brackets inside an Event. For example,
+A phase in smash-promise is a subset of matches and brackets inside an Event. For example,
 a wave in pools is a Phase. Everything in that Phase is a Group (or Phase Group).
 
 ```javascript
-var phase1 = new smashgg.Phase(111483);
-phase1.on('ready', function(){
-    //do stuff with phase1
-})
-
-var phase2 = new smashgg.Phase(
-    45262,
-    {
-        groups: false
-    },
-    false
-)
-phase2.on('ready', function(){
-    //do stuff with phase2
-})
+smashgg.getPhase(100046)
+    .then(to12phase => {
+        var info = [
+            {
+                key: 'Name',
+                value: to12phase.getName()
+            },
+            {
+                key: 'EventId',
+                value: to12phase.getEventId()
+            }
+        ]
+    })
+    .catch(e => console.error(e))
 ```
 
 ### Constructor
-* **Phase(id [,expands, isCached])**
+* **Phase(id, expands, data)**
     * **id** [required] - unique identifier for the Phase
     * **expands** - an object that defines which additional data is sent back. By default all values are marked true.
         * groups - boolean -condensed data for the groups that comprise the phases
-    * **isCached** - boolean parameter for if the api should cache the resulting object
-
-### Properties
-* **data** - a copy of the raw Phase JSON that comprises this object
-* **id** - the id from the constructor, a unique identifier for the phase
-* **isCached** - True/False value of if the object should be cached
-* **expands** - Object that asks smash.gg for more info when api is called
-* **expandsString** - url encoded string version of the expands object
-* **url** - smash.gg api url used to create this Phase object
-
-### Events
-* **'ready'**
-    * indicates when the Phase object is populated with data
-* **'error'**
-    * indicates an error occurred when creating the Phase
-    * returns an Error object to be used by the user
+    * **data** - the parsed data obtained from the XHR to the smashgg API.
 
 ### Methods
 #### Promises
-* **getPhaseGroups([fromCacheTF])**
+* **getPhase()**
+    * Returns a Promise that resolves a request to the smashgg API endpoint for that particular phase. 
+    * This method sits on the Phase classes prototype and references the object's **get()** method.
+
+* **getPhaseGroups()**
     * Returns a Promise resolving an array of `PhaseGroup` objects belonging to this Phase
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
+
+* **getPhasePlayers()**
+    * Returns a Promise resolving an array of `Player` objects that belong to the current Phase.
+
+* **getPhaseSets()**
+    * Returns a Promise resolving an array of `Match` objects that have been conducted in this Phase.
 
 #### Getters
 * **getName()**
@@ -373,79 +297,115 @@ phase2.on('ready', function(){
 A Phase Group is the lowest unit on smash.gg. It is a bracket of some sort that belongs to a Phase.
 
 ```javascript
-var phaseGroup1 = new smashgg.PhaseGroup(44445);
-phaseGroup1.on('ready', function(){
-    //do stuff with phaseGroup1
-})
-
-var phaseGroup2 = new smashgg.PhaseGroup(
-    301994,
-    {
-        sets: true,
-        entrants: true,
-        standings: true,
-        seeds: false
-    },
-    false
-);
-phaseGroup2.on('ready', function(){
-    //do stuff with phaseGroup2
-})
+smashgg.getPhaseGroup(301994)
+    .then(to12phasegroup => {
+        // Do stuff with phase group
+    })
+    .catch(e => console.error(e));
 ```
 
 ### Constructor
-* **PhaseGroup(id [, expands, isCached])**
+* **PhaseGroup(id, expands, data)**
     * **id** [required] - unique identifier for this Phase Group
     * **expands** - an object that defines which additional data is sent back. By default all values are marked true.
         * sets - boolean - data for the sets that comprises the phase group
         * entrants - boolean - data for the entrants that comprise the phase group
         * standings - boolean - data for the standings of the entrants for the phase group
         * seeds - boolean - data for the seeding of entrants for the for the phase group
-    * **isCached** - boolean value for if the resulting object should be cached
-
-### Properties
-* **data** - a copy of the raw PhaseGroup JSON that comprises this object
-* **id** - the id from the constructor, a unique identifier for the Phase Group
-* **isCached** - True/False value of if the object should be cached
-* **expands** - Object that asks smash.gg for more info when api is called
-* **expandsString** - url encoded string version of the expands object
-* **url** - smash.gg api url used to create this PhaseGroup object
-
-### Events
-* **'ready'**
-    * indicates when the PhaseGroup object is populated with data
-* **'error'**
-    * indicates an error occurred when creating the Phase Group
-    * returns an Error object to be used by the user
+    * **data** - the parsed data obtained from the XHR to the smashgg API.
 
 ### Methods
 #### Promises
-* **getPlayers([fromCacheTF])**
+* **getPhaseGroup(id, expands)**
+    * Returns a Promise that resolves the JSON data that has been retrieved from the smashgg API endpoint.
+
+* **getPlayers()**
     * Returns a Promise that resolves an array of `Player` objects for the Phase Group.
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
-* **getSets([fromCacheTF])**
+
+* **getMatches()**
     * Return a Promise that resolves an array of `Set` objects for the Phase Group.
-    * **fromCacheTF** - boolean value for if the value should be retrieved from cache. Defaults to true
+
+* **findWinnerLoserByParticipantIds(winnerId, loserId)**
+    * Returns a Promise that resolves an array of `Objects` that describing the result of a `Match` that has been played between two players in the Phase Group.
+
+* **findPlayersByParticipantId(id)** 
+    * Returns a Promise that resolves an array of `Player` objects that participated in the current Phase Group by that Phase Group's particular ID.
 
 #### Getters
 * **getPhaseId()**
     * returns the Phase Id that owns this Phase Group
 
-## Player
-A Player is a data object that holds information about players who
-went to a tournament using smash.gg.
-```javascript
-var player = new smashgg.Player(000000, 'cookiE', 'Brandon Cooke', 'US', 'GA', 'Recursion');
+## Match
+A Match is a data object that holds information about a tournament set that took place at a tournament.
+The keyword `Match` is used in order to prevent accidental overriding of the native `Set` class.
 
-var tournament = smashgg.Tournament('to12');
-tournament.on('ready', async function(){
-    var players = await tournament.getAllPlayers();
-    //returns all players in a tournament as Player objects
-});
+```javascript
+smashgg.getTournament('to12')
+    .then(to12 => {
+        to12.getAllMatches()
+            .then(matches => {
+                // Do stuff with matches
+            })
+            .catch(e => console.error(e));
+    })
+    .catch(e => console.error(e))
 ```
 
 ### Constructor
-* **Player(id [, tag, name, country, state/region, sponsor/prefix, participantId, data])**
+* **Match(id, eventId, round, WinnerPlayer, LoserPlayer, data)**
+    * **id** [required] - unique identifier of the Set object
+    * **eventId** [required] - id of the event this Set belongs to
+    * **round** [required] - round name of the Set
+    * **WinnerPlayer** [required] - Player object of the winner of the Set
+    * **LoserPlayer** [required] - Player object of the loser of the Set
+    * **data** - raw data of the Match object retrieved from the smashgg API endpoint. 
+
+### Properties
+* no additional properties for Set
+
+### Methods
+#### Getters
+* **getRound()**
+    * return the round name for the Set
+* **getWinner()**
+    * return the Winner Player object for the Set
+* **getLoser()**
+    * return the Loser Player object for the Set
+* **getGames()**
+    * return the list of Games for the Set if available
+* **getBestOfCount()**
+    * return the best-of count for the Set
+* **getWinnerScore()**
+    * return the winner's score for the Set
+* **getLoserScore()**
+    * return the loser's score for the Set
+* **getBracketId()**
+    * return the bracket id for the Set
+* **getMidsizeRoundText()**
+    * return the midsize round text for the Set
+* **getPhaseGroupId()**
+    * return the phase id for the Phase which this Set belongs to
+* **getWinnersTournamentPlacement()**
+    * return the Set winner's final tournament placing
+* **getLosersTournamentPlacement()**
+    * return the Set loser's final tournament placing
+
+## Player
+A Player is a data object that holds information about players who went to a tournament using smash.gg.
+```javascript
+smashgg.getTournament('to12')
+    .then(to12 => {
+        to12.getAllPlayers()
+            .then(players => {
+                // Do stuff with players
+            })
+            .catch(e => console.error(e))
+    })
+    .catch(e => console.error(e));
+```
+
+### Constructor
+* **Player(id, tag, name, country, state, sponsor, participantId, data)**
     * **id** [required] - the global id for the player in smash.gg
     * **tag** - smash tag of the player
     * **name** - real name of the player
@@ -482,58 +442,3 @@ tournament.on('ready', async function(){
 * **getFinalPlacement()**
     * requires **data** property
     * return the final placement of the Player
-
-## Set
-A Set is a data object that holds information about a tournament set
-that took place at a tournament.
-
-```javascript
-var Winner = new smashgg.Player(000000, 'BootyBlastWarrior', 'Andy', 'US', 'GA', null);
-var Loser = new smashgg.Player(000000, 'cookiE', 'Brandon Cooke', 'US', 'GA', 'Recursion');
-
-var set = new smashgg.Set(000001, 000002, 'Losers Semis', Winner, Loser);
-
-var tournament = new smashgg.Tournament('to12');
-tournament.on('ready', async function(){
-    var sets = await tournament.getAllSets();
-    //returns a list of Set objects from the tournament
-})
-```
-
-### Constructor
-* **Set(id, eventId, round, WinnerPlayer, LoserPlayer [, data])**
-    * **id** [required] - unique identifier of the Set object
-    * **eventId** [required] - id of the event this Set belongs to
-    * **round** [required] - round name of the Set
-    * **WinnerPlayer** [required] - Player object of the winner of the Set
-    * **LoserPlayer** [required] - Player object of the loser of the Set
-
-### Properties
-* no additional properties for Set
-
-### Methods
-#### Getters
-* **getRound()**
-    * return the round name for the Set
-* **getWinner()**
-    * return the Winner Player object for the Set
-* **getLoser()**
-    * return the Loser Player object for the Set
-* **getGames()**
-    * return the list of Games for the Set if available
-* **getBestOfCount()**
-    * return the best-of count for the Set
-* **getWinnerScore()**
-    * return the winner's score for the Set
-* **getLoserScore()**
-    * return the loser's score for the Set
-* **getBracketId()**
-    * return the bracket id for the Set
-* **getMidsizeRoundText()**
-    * return the midsize round text for the Set
-* **getPhaseGroupId()**
-    * return the phase id for the Phase which this Set belongs to
-* **getWinnersTournamentPlacement()**
-    * return the Set winner's final tournament placing
-* **getLosersTournamentPlacement()**
-    * return the Set loser's final tournament placing

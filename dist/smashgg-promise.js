@@ -1,5 +1,7 @@
 var smashgg = Object;
 
+const API_URL = 'https://i9nvyv08rj.execute-api.us-west-2.amazonaws.com/prod/smashgg-lambda';
+
 var request = function(method, url, data){
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
@@ -23,7 +25,7 @@ var request = function(method, url, data){
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify(data));
     });
-}
+};
 
 /** TOURNAMENTS */
 class Tournament{
@@ -44,24 +46,24 @@ class Tournament{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                event: (expands && expands.event) || true,
-                phase: (expands && expands.phase) || true,
-                groups: (expands && expands.groups) || true,
-                stations: (expands && expands.stations) || true
+                event: (expands && expands.event == false) ? false : true,
+                phase: (expands && expands.phase == false) ? false : true,
+                groups: (expands && expands.groups == false) ? false : true,
+                stations: (expands && expands.stations == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            //var url = 'https://api.smash.gg/tournament/' + tournamentName + '?' + expandsString;
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/tournament'
+
             var postParams = {
+                type: 'tournament',
                 tournamentName: tournamentName,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Tournament(name, expandsObj, data));
                 })
@@ -134,7 +136,7 @@ class Tournament{
         })
     }
 
-    getAllSets(){
+    getAllMatches(){
         var ThisTournament = this;
         return new Promise(function(resolve, reject){
             var groups = ThisTournament.data.entities.groups;
@@ -148,7 +150,7 @@ class Tournament{
                 .then(allGroups => {
                     var setsPromises = [];
                     allGroups.forEach(group => {
-                        setsPromises.push(group.getSets());
+                        setsPromises.push(group.getMatches());
                     })
                     Promise.all(setsPromises)
                         .then(groupSets => {
@@ -164,39 +166,57 @@ class Tournament{
         })
     }
 
-    // Needs to be looked at
     getAllPlayers(){
         let thisTournament = this;
         return new Promise(function(resolve, reject){
             // Grab all events from tournament
-            let eventPromises = thisTournament.data.entities.event.map(e => {
-                return Event.get(thisTournament.name, e.name);
+            let eventPromises = thisTournament.data.entities.event.map(currEvent => {
+                return Event.getEventById(thisTournament.name, currEvent.id);
             });
-            console.log("Events... ", eventPromises);
             // Promisify all events
             Promise.all(eventPromises)
-                // Grab phaseGroups from each event
-                .then(events => {
-                    let phaseGroups = events.map(event => {
-                        return event.getPhaseGroups();
+            // Grab phaseGroups from each event
+            .then(allEvents => {
+                let allPhasePromises = [];
+                allEvents.forEach(event => {
+                    event.data.entities.phase.forEach(currPhase =>  {
+                        allPhasePromises.push(Phase.get(currPhase.id));
                     });
-                    console.log('Phase Groups...', phaseGroups);
-                    Promise.all(phaseGroups)
-                        // Work with phaseGroups
-                        .then(groups => {
-                            let players = groups.map(group => {
-                                return group.getPlayers();
-                            });
-                            // Should create a set of unique players
-                            let newPlayers = Array.from(new Set(players));
-                            return resolve(...newPlayers);
-                        })
-                        .catch(reject);
-                })
-                .catch(function(e){
-                    console.error('eventPromises failed: ' + e.message);
-                    console.error(e.stack);
                 });
+                // Resolve and work with list of phases 
+                Promise.all(allPhasePromises)
+                .then(phases => {
+                    let playerPromises = [];
+                    phases.forEach(phase => {
+                        playerPromises.push(phase.getPhasePlayers());
+                    });
+                    Promise.all(playerPromises)
+                    .then(phasePlayers => {
+                        let allPlayers = [];
+                        phasePlayers.forEach(currPhase => {
+                            currPhase.forEach(players => {
+                                if (!allPlayers.includes(players)) {
+                                    allPlayers.push(players);
+                                }
+                            });
+                        });
+
+                        // Returns a unique list of players
+                        let flags = {};
+                        let players = allPlayers.filter(player => {
+                            if (flags[player.id]) {
+                                return false;
+                            }
+                            flags[player.id] = true;
+                            return true;
+                        });
+                        return resolve(players);
+                    })
+                    .catch(reject);
+                })
+                .catch(reject);
+            })
+            .catch(reject);
         })
     }
 }
@@ -204,8 +224,8 @@ class Tournament{
 /** EVENTS */
 
 class Event{
-    constructor(id, tournamentName, eventName, expands, data){
-        this.id = id;
+    constructor(tournamentName, eventName, expands, data, eventId){
+        this.eventId = eventId;
         this.tournamentName = tournamentName;
         this.eventName = eventName;
         this.expands = expands;
@@ -224,25 +244,26 @@ class Event{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                phase: (expands && expands.phase) || true,
-                groups: (expands && expands.groups) || true
+                phase: (expands && expands.phase == false) ? false : true,
+                groups: (expands && expands.groups == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
+
+
             var postParams = {
-                eventId: null,
+                type: 'event',
                 tournamentName: tournamentName,
                 eventName: eventName,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
-                    return resolve(new Event(data.id, tournamentName, eventName, expandsObj, data));
+                    return resolve(new Event(tournamentName, eventName, expandsObj, data, null));
                 })
                 .catch(function(err){
                     console.error('Smashgg Tournament: ' + err);
@@ -251,37 +272,15 @@ class Event{
         })
     }
 
-    static getById(id, tournamentName, expands){
+    static getEventById(tournamentName = null, eventId) {
         return new Promise(function(resolve, reject){
-            if(!tournamentName)
-                return reject(new Error('Tournament Name cannot be null for Event'));
-            if(!eventName)
-                return reject(new Error('Event Name cannot be null for Event'));
-    
-            var data = {};
-    
-            // CREATE THE EXPANDS STRING
-            var expandsString = "";
-            var expandsObj = {
-                phase: (expands && expands.phase) || true,
-                groups: (expands && expands.groups) || true
-            };
-            for(var property in expandsObj){
-                if(expandsObj[property] instanceof Function) break;
-                else if(expandsObj[property])
-                    expandsString += 'expand[]=' + property + '&';
-            }
-    
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
             var postParams = {
-                eventId: id,
-                tournamentName: tournamentName,
-                eventName: eventName,
-                expands: expandsObj
+                eventId: eventId,
             }
             request('POST', url, postParams)
                 .then(function(data){
-                    return resolve(new Event(id, tournamentName, eventName, expandsObj, data));
+                    return resolve(new Event(tournamentName, data.name, null, data, eventId));
                 })
                 .catch(function(err){
                     console.error('Smashgg Tournament: ' + err);
@@ -348,7 +347,7 @@ class Phase{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                groups: (expands && expands.groups) || true
+                groups: (expands && expands.groups == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
@@ -356,13 +355,14 @@ class Phase{
                     expandsString += 'expand[]=' + property + '&';
             }
     
-            //var url = 'https://api.smash.gg/phase/' + id + "?" + expandsString;
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
             var postParams = {
+                type: 'phase',
                 id: id,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Phase(id, expandsObj, data));
                 })
@@ -383,13 +383,66 @@ class Phase{
     getPhaseGroups(){
         let thisPhase = this;
         return new Promise(function(resolve, reject){
-            let groups = [];thisPhase.data.entities.groups.forEach(group => {
+            let groups = [];
+            thisPhase.data.entities.groups.forEach(group => {
                 let g = PhaseGroup.get(group.id);
                 groups.push(g)
             });
             Promise.all(groups)
                 .then(resolve)
                 .catch(reject);
+        })
+    }
+
+    getPhasePlayers() {
+        let thisPhase = this;
+        return new Promise(function(resolve, reject) {
+            // get phase groups
+            let phasePromises = thisPhase.data.entities.groups.map(group => {
+                return PhaseGroup.get(group.id);
+            });
+            Promise.all(phasePromises)
+                .then(phaseGroups => {
+                    let playerPromises = [];
+                    phaseGroups.forEach(group => {
+                        playerPromises.push(group.getPlayers());     
+                    });
+                    Promise.all(playerPromises)
+                        .then(allPlayers => {
+                            // Should give a unique list of players
+                            let players = [].concat(...allPlayers);
+                            return resolve(players);
+                        }).catch(reject);
+                })
+                .catch(reject);
+        })
+    }
+
+    getPhaseSets() {
+        let thisPhase = this;
+        return new Promise (function(resolve, reject) {
+            let phasePromises = thisPhase.data.entities.groups.map(group => {
+                return PhaseGroup.get(group.id);
+            });
+            Promise.all(phasePromises)
+            .then(phaseGroups => {
+                let setPromises = [];
+                phaseGroups.forEach(group => {
+                    setPromises.push(group.getMatches());
+                })
+                Promise.all(setPromises)
+                .then(phaseSets => {
+                    let allSets = [];
+                    phaseSets.forEach(sets => {
+                        sets.forEach(set => {
+                            allSets.push(set);
+                        })
+                    })
+                    return resolve(allSets);
+                })
+                .catch(reject);
+            })
+            .catch(reject);
         })
     }
 }
@@ -413,23 +466,24 @@ class PhaseGroup{
             // CREATE THE EXPANDS STRING
             var expandsString = "";
             var expandsObj = {
-                sets: (expands && expands.sets) ? expands.sets : true,
-                entrants: (expands && expands.entrants) ? expands.entrants : true,
-                standings: (expands && expands.standings) ? expands.standings : true,
-                seeds: (expands && expands.seeds) ? expands.seeds : true
+                sets: (expands && expands.sets == false) ? false : true,
+                entrants: (expands && expands.entrants == false) ? false : true,
+                standings: (expands && expands.standings == false) ? false : true,
+                seeds: (expands && expands.seeds == false) ? false : true
             };
             for(var property in expandsObj){
                 if(expandsObj[property] instanceof Function) break;
                 else if(expandsObj[property])
                     expandsString += 'expand[]=' + property + '&';
             }
-    
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phasegroup';
+
             var postParams = {
+                type: 'phasegroup',
                 id: id,
                 expands: expandsObj
-            }
-            request('POST', url, postParams)
+            };
+
+            request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new PhaseGroup(id, expandsObj, data));
                 })
@@ -460,7 +514,7 @@ class PhaseGroup{
         });
     }
     
-    getSets(){
+    getMatches(){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
             let sets = ThisPhaseGroup.data.entities.sets.map(set => {
@@ -556,7 +610,6 @@ class Set{
 		this.data = data;
     }
 
-
     getRound(){
         return this.round;
     }
@@ -637,9 +690,6 @@ class Player{
             let playerId = 0;
             let participantId = 0;
 
-            //for(let id in data.mutations.participants)
-            //    participantId = id;
-
             for(let id in data.mutations.players){
                 if(isNaN(parseInt(id))) break;
                 playerId = id;
@@ -702,3 +752,5 @@ smashgg.prototype.getTournament = Tournament.get;
 smashgg.prototype.getEvent = Event.get;
 smashgg.prototype.getPhase = Phase.get;
 smashgg.prototype.getPhaseGroup = PhaseGroup.get;
+
+module.exports = smashgg;
