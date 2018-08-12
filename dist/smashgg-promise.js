@@ -1,4 +1,4 @@
-var smashgg = Object;
+var smashgg = new Object();
 
 const API_URL = 'https://i9nvyv08rj.execute-api.us-west-2.amazonaws.com/prod/smashgg-lambda';
 
@@ -838,9 +838,9 @@ class Player{
 }
 
 /** DEFINE PROTOTYPE */
-smashgg.prototype.getTournament = Tournament.get;
-smashgg.prototype.getEvent = Event.get;
-smashgg.prototype.getPhase = Phase.get;
-smashgg.prototype.getPhaseGroup = PhaseGroup.get;
+smashgg.getTournament = Tournament.get;
+smashgg.getEvent = Event.get;
+smashgg.getPhase = Phase.get;
+smashgg.getPhaseGroup = PhaseGroup.get;
 
 module.exports = smashgg;
