@@ -2,6 +2,19 @@ var smashgg = Object;
 
 const API_URL = 'https://i9nvyv08rj.execute-api.us-west-2.amazonaws.com/prod/smashgg-lambda';
 
+Array.prototype.flatten = function(iterations){
+    let root = [];
+    iterations = iterations || 1;
+    for(let i = 0; i < iterations; i++){
+        let element = this[i];
+        if(Array.isArray(element))
+            root = root.concat(element)
+        else   
+            root.push(element);
+    }
+    return root;
+}
+
 var request = function(method, url, data){
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
@@ -134,6 +147,21 @@ class Tournament{
                 .then(resolve)
                 .catch(console.error);
         })
+    }
+
+    getAllMatchIds(){
+        return this.getAllEvents()
+            .then(events => {
+                let promises = events.map(event => {
+                    return event.getEventMatchIds()
+                })
+                return Promise.all(promises)
+                    .then(idArrays => {
+                        return idArrays.flatten();
+                    })
+                    .catch(console.error);
+            })
+            .catch(console.error);
     }
 
     getAllMatches(){
@@ -314,6 +342,21 @@ class Event{
             Promise.all(promises).then(resolve).catch(reject);
         });
     }
+
+    getEventMatchIds(){
+        return this.getEventPhaseGroups()
+            .then(groups => {
+                let promises = groups.map(group => {
+                    return group.getMatchIds();
+                })
+                return Promise.all(promises)
+                    .then(idArrays => {
+                        return idArrays.flatten();
+                    })
+                    .catch(console.error);
+            })
+            .catch(console.error);
+    }
     
     getEventPhaseGroups(){
         let thisEvent = this;
@@ -418,6 +461,21 @@ class Phase{
         })
     }
 
+    getPhaseMatchIds(){
+        return this.getPhaseGroups()
+            .then(groups => {
+                let promises = groups.map(group => {
+                    return group.getMatchIds();
+                })
+                return Promise.all(promises)
+                    .then(idArrays => {
+                        return idArrays.flatten();
+                    })
+                    .catch(console.error);
+            })
+            .catch(console.error);
+    }
+
     getPhaseSets() {
         let thisPhase = this;
         return new Promise (function(resolve, reject) {
@@ -513,11 +571,19 @@ class PhaseGroup{
             return resolve(players);
         });
     }
+
+    getMatchIds(){
+        var ThisPhaseGroup = this;
+        let ids = ThisPhaseGroup.data.entities.sets.map(set => {
+            return set.id;
+        })
+        return Promise.resolve(ids);
+    }
     
     getMatches(){
         var ThisPhaseGroup = this;
-        return new Promise(function(resolve, reject){
-            let sets = ThisPhaseGroup.data.entities.sets.map(set => {
+        let sets = ThisPhaseGroup.data.entities.sets.map(set => {
+            return new Promise(function(resolve, reject){
                 //var p = new Promise(function(resolve, reject){
                 let isComplete = set.completedAt != null;
                 
@@ -530,23 +596,27 @@ class PhaseGroup{
                     winnerId != set.entrant1Id ? 
                         set.entrant1Id : set.entrant2Id;
 
-                let S = new Set(
-                    set.id, 
-                    set.eventId, 
-                    set.fullRoundText, 
-                    set.entrant1,
-                    set.entrant2,
-                    isComplete,
-                    set.entrant1Score,
-                    set.entrant2Score,
-                    winnerId,
-                    loserId,
-                    JSON.stringify(set)
-                );
-                return S;
-            })
-            return resolve(sets);
-        });
+                ThisPhaseGroup.findPlayersByIds(winnerId, loserId)
+                    .then(players => {
+                        let S = new Set(
+                            set.id, 
+                            set.eventId, 
+                            set.fullRoundText, 
+                            players[0],
+                            players[1],
+                            isComplete,
+                            winnerId,
+                            loserId,
+                            winnerId,
+                            loserId,
+                            JSON.stringify(set)
+                        );
+                        return resolve(S);
+                    })
+                    .catch(reject)
+                });
+        })
+        return Promise.all(sets);
     }
 
     findWinnerLoserByParticipantIds(winnerId, loserId){
@@ -577,6 +647,7 @@ class PhaseGroup{
     findPlayersByParticipantId(id){
         var ThisPhaseGroup = this;
         return new Promise(function(resolve, reject){
+            if(!id) return resolve(null);
             ThisPhaseGroup.getPlayers()
                 .then(players => {
                     let player = players.filter(e => {return e.participantId == id});
@@ -586,6 +657,16 @@ class PhaseGroup{
                 })
                 .catch(console.error)
             });
+    }
+
+    findPlayersByIds(){
+        var ThisPhaseGroup = this;
+        let promises = [];
+        for(var prop in arguments){
+            if(!isNaN(prop))
+                promises.push(this.findPlayersByParticipantId(arguments[prop]));
+        }
+        return Promise.all(promises);
     }
 }
 
@@ -598,10 +679,10 @@ class Set{
 			throw new Error('Event Id for Set cannot be null');
 		if(!round)
 			throw new Error('Round for Set cannot be null');
-		if(!player1 && !(player1 instanceof Player))
+		if(!(player1 instanceof Player))
 			throw new Error('Winner Player for Set cannot be null, and must be an instance of Player');
-		if(!player2 && !(player2 instanceof Player))
-			throw new Error('Loser Player for Set cannot be null, and must be an instance of Player');
+		if(!(player2 instanceof Player))
+            throw new Error('Loser Player for Set cannot be null, and must be an instance of Player');
 
 		this.id = id;
 		this.eventId = eventId;
