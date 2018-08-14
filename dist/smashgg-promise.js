@@ -45,7 +45,7 @@ class Tournament{
     constructor(name, expands, data){
         this.name = name;
         this.expands = expands;
-        this.data = JSON.parse(data);
+        this.data = JSON.parse(data).data;
     }
 
     static get(tournamentName, expands){
@@ -150,14 +150,17 @@ class Tournament{
     }
 
     getAllMatchIds(){
-        return this.getAllEvents()
-            .then(events => {
-                let promises = events.map(event => {
-                    return event.getEventMatchIds()
+        var promises = this.data.entities.groups.map(group => { 
+            return PhaseGroup.get(group.id).catch(console.error); 
+        });
+        return Promise.all(promises)
+            .then(groups => { 
+                let idPromises = groups.map(group => { 
+                    return group.getMatchIds(); 
                 })
-                return Promise.all(promises)
-                    .then(idArrays => {
-                        return idArrays.flatten();
+                return Promise.all(idPromises)
+                    .then(idArrays => { 
+                        return Promise.resolve(idArrays.flatten());
                     })
                     .catch(console.error);
             })
@@ -257,7 +260,7 @@ class Event{
         this.tournamentName = tournamentName;
         this.eventName = eventName;
         this.expands = expands;
-        this.data = JSON.parse(data);
+        this.data = JSON.parse(data).data;
     }
 
     static get(tournamentName, eventName, expands){
@@ -344,18 +347,21 @@ class Event{
     }
 
     getEventMatchIds(){
-        return this.getEventPhaseGroups()
-            .then(groups => {
-                let promises = groups.map(group => {
-                    return group.getMatchIds();
+        var groupPromises = this.data.entities.groups.map(group => { 
+            return PhaseGroup.get(group.id).catch(console.error); 
+        });
+        return Promise.all(groupPromises)
+            .then(groups => { 
+                let idPromises = groups.map(group => { 
+                    return group.getMatchIds(); 
                 })
-                return Promise.all(promises)
-                    .then(idArrays => {
-                        return idArrays.flatten();
+                return Promise.all(idPromises)
+                    .then(idArrays => { 
+                        return Promise.resolve(idArrays.flatten());
                     })
                     .catch(console.error);
             })
-            .catch(console.error);
+            .catch(console.error)
     }
     
     getEventPhaseGroups(){
@@ -377,7 +383,7 @@ class Phase{
     constructor(id, expands, data){
         this.id = id;
         this.expands = expands;
-        this.data = JSON.parse(data);
+        this.data = JSON.parse(data).data;
     }
 
     static get(id, expands){
@@ -462,14 +468,17 @@ class Phase{
     }
 
     getPhaseMatchIds(){
-        return this.getPhaseGroups()
-            .then(groups => {
-                let promises = groups.map(group => {
-                    return group.getMatchIds();
+        var promises = this.data.entities.groups.map(group => { 
+            return PhaseGroup.get(group.id).catch(console.error); 
+        });
+        return Promise.all(promises)
+            .then(groups => { 
+                let idPromises = groups.map(group => { 
+                    return group.getMatchIds(); 
                 })
-                return Promise.all(promises)
-                    .then(idArrays => {
-                        return idArrays.flatten();
+                return Promise.all(idPromises)
+                    .then(idArrays => { 
+                        return Promise.resolve(idArrays.flatten());
                     })
                     .catch(console.error);
             })
@@ -511,7 +520,7 @@ class PhaseGroup{
     constructor(id, expands, data){
         this.id = id;
         this.expands = expands;
-        this.data = JSON.parse(data);
+        this.data = JSON.parse(data).data;
     }
 
     static get(id, expands){
@@ -698,6 +707,33 @@ class Set{
 		this.data = data;
     }
 
+    static get(id){
+        let postParams = {
+            type: 'set',
+            id: id
+        }
+
+        return request('POST', API_URL, postParams)
+            .then(data => {
+
+            }) 
+            .catch(console.error);
+        
+    }
+
+    static getFromIdArray(idArray){
+        let postParams = {
+            type: 'sets',
+            idArray: idArray
+        }
+
+        return request('POST', API_URL, postParams)
+            .then(data => {
+
+            })
+            .catch(console.error);
+    }
+
     getRound(){
         return this.round;
     }
@@ -802,6 +838,33 @@ class Player{
             console.error(e.message);
             throw e;
         }
+    }
+
+    static get(id){
+        let postParams = {
+            type: 'player',
+            id: id
+        }
+
+        return request('POST', API_URL, postParams)
+            .then(data => {
+
+            }) 
+            .catch(console.error);
+        
+    }
+
+    static getFromIdArray(idArray){
+        let postParams = {
+            type: 'players',
+            idArray: idArray
+        }
+
+        return request('POST', API_URL, postParams)
+            .then(data => {
+
+            })
+            .catch(console.error);
     }
 
     getId(){
