@@ -715,7 +715,7 @@ class Set{
 
         return request('POST', API_URL, postParams)
             .then(data => {
-
+                return resolve(data);
             }) 
             .catch(console.error);
         
@@ -729,7 +729,7 @@ class Set{
 
         return request('POST', API_URL, postParams)
             .then(data => {
-
+                return data.map(set => { return resolve(set); });
             })
             .catch(console.error);
     }
@@ -848,7 +848,7 @@ class Player{
 
         return request('POST', API_URL, postParams)
             .then(data => {
-
+                return resolve(data);
             }) 
             .catch(console.error);
         
@@ -862,7 +862,7 @@ class Player{
 
         return request('POST', API_URL, postParams)
             .then(data => {
-
+                data.map(player => { return resolve(player); });
             })
             .catch(console.error);
     }
@@ -905,5 +905,9 @@ smashgg.getTournament = Tournament.get;
 smashgg.getEvent = Event.get;
 smashgg.getPhase = Phase.get;
 smashgg.getPhaseGroup = PhaseGroup.get;
+smashgg.getPlayer = Player.get;
+smashgg.getPlayers = Player.getFromIdArray;
+smashgg.getMatch = Match.get;
+smashgg.getMatches = Match.getFromIdArray;
 
 module.exports = smashgg;
