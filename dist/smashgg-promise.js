@@ -609,7 +609,7 @@ class PhaseGroup{
 
                 ThisPhaseGroup.findPlayersByIds(winnerId, loserId)
                     .then(players => {
-                        let S = new Set(
+                        let S = new ggMatch(
                             set.id, 
                             set.eventId, 
                             set.fullRoundText, 
@@ -682,7 +682,7 @@ class PhaseGroup{
 }
 
 /** Sets */
-class Set{
+class ggMatch{
     constructor(id, eventId, round, player1, player2, isComplete=false, score1=0, score2=0, winnerId, loserId, data){
 		if(!id)
 			throw new Error('Id for Set cannot be null');
@@ -909,7 +909,7 @@ smashgg.getPhase = Phase.get;
 smashgg.getPhaseGroup = PhaseGroup.get;
 smashgg.getPlayer = ggPlayer.get;
 smashgg.getPlayers = ggPlayer.getFromIdArray;
-smashgg.getMatch = Match.get;
-smashgg.getMatches = Match.getFromIdArray;
+smashgg.getMatch = ggMatch.get;
+smashgg.getMatches = ggMatch.getFromIdArray;
 
 module.exports = smashgg;
