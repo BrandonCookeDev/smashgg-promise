@@ -1,6 +1,6 @@
 
 export function request(method: string, url: string, data: any) : Promise<any>{
-    return new Promise(function (resolve: Function, reject: Function) {
+    return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open(method, url);
         xhr.onload = function () {

@@ -1,6 +1,7 @@
 import * as NI from './util/NetworkInterface'
-import { Player, GGSet, Event } from './internal'
-import { ICommon, createExpandsString, API_URL } from './util/Common'
+import { GGPlayer, GGSet, Event, Phase, PhaseGroup } from './internal'
+import { IPlayer, IGGSet, IEvent } from './internal'
+import { ICommon, createExpandsString, API_URL, flatten } from './util/Common'
 import Entity = ICommon.Entity
 
 export namespace ITournament{
@@ -23,7 +24,7 @@ export namespace ITournament{
 
 		load() : Promise<Data | string> 
 
-		getAllPlayers(options: Options) : Promise<Array<Player>> 
+		getAllPlayers(options: Options) : Promise<Array<GGPlayer>> 
 
 		getAllSets(options: Options) : Promise<Array<GGSet>>
 
@@ -95,9 +96,9 @@ export namespace ITournament{
 
 	export interface Data{
 		tournament: Entity
-		event?: [Entity],
-		phase?: [Entity],
-		groups?: [Entity],
+		event?: [IEvent.EventEntity],
+		phase?: [IPhase.Entity],
+		groups?: [IPhaseGroup.Entity],
 		stations?: {
 			[x: string]: any
 		},
@@ -156,13 +157,18 @@ import Data = ITournament.Data
 import Expands = ITournament.Expands
 import Options = ICommon.Options
 import TournamentOptions = ITournament.Options
+import EventEntity = IEvent.EventEntity
+import PlayerEntity = IPlayer.Entity
+import GGSetEntity = IGGSet.Entity
+import { IPhase } from './Phase';
+import { IPhaseGroup } from './PhaseGroup';
 
 /** TOURNAMENTS */
-class Tournament implements ITournament.Tournament{
+export class Tournament implements ITournament.Tournament{
 
 	public name: string
 	public expands: Expands
-	public data: string
+	public data: Data
 	
     constructor(name: string, expands: Expands, data: string){
         this.name = name;
@@ -244,13 +250,13 @@ class Tournament implements ITournament.Tournament{
         return this.data.entities.tournament['processingFee'];
     }
 
-    getAllEvents(){
+    getAllEvents() : Promise<Event[]> {
         var ThisTournament = this;
         return new Promise(function(resolve, reject){
-            var events = ThisTournament.data.entities.event;
+            var events: EventEntity  = ThisTournament.data.entities.event;
         
-            var promises = [];
-            events.forEach(event => {
+            var promises: Promise<Event>[] = [];
+            events.forEach(event: EventEntity => {
                 promises.push(Event.get(ThisTournament.name, event.name));
             })
 
@@ -260,8 +266,8 @@ class Tournament implements ITournament.Tournament{
         })
     }
 
-    getAllMatchIds(){
-        var promises = this.data.entities.groups.map(group => { 
+    getAllMatchIds() : Promise<number[]> {
+        var promises: Promise<PhaseGroup>[] = this.data.entities.groups.map(group => { 
             return PhaseGroup.get(group.id).catch(console.error); 
         });
         return Promise.all(promises)
@@ -271,7 +277,7 @@ class Tournament implements ITournament.Tournament{
                 })
                 return Promise.all(idPromises)
                     .then(idArrays => { 
-                        return Promise.resolve(idArrays.flatten());
+                        return Promise.resolve(flatten(idArrays));
                     })
                     .catch(console.error);
             })

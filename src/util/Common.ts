@@ -1,6 +1,21 @@
 
 export const API_URL = 'https://i9nvyv08rj.execute-api.us-west-2.amazonaws.com/prod/smashgg-lambda';
 
+export function flatten(arr: any[], depth: number = 1) : any[]{
+    let root: any[] = [];
+    depth = depth || 1;
+    for(let i = 0; i < depth; i++){
+        for(let j = 0; j < arr.length; j++){
+            let element = arr[i];
+            if(Array.isArray(element))
+                root = root.concat(element)
+            else   
+                root.push(element);
+        }
+    }
+    return root;
+}
+
 export function createExpandsString(expands: any) : string{
 	let expandsString: string = '';
     for(let property in expands){
