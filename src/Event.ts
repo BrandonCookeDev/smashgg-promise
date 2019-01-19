@@ -1,10 +1,13 @@
-import { ICommon } from './util/Common'
-import { Phase, PhaseGroup, GGSet } from './internal'
-import { IPhase, IPhaseGroup, IGGSet } from './internal'
+import * as NI from './util/NetworkInterface'
+import { API_URL, ICommon, createExpandsString } from './util/Common'
+import { Tournament, Phase, PhaseGroup, Player, GGSet } from './internal'
+import { ITournament, IPhase, IPhaseGroup, IPlayer, IGGSet } from './internal'
 
 import Entity = ICommon.Entity
 import PhaseEntity = IPhase.Entity
 import PhaseGroupEntity = IPhaseGroup.Entity
+import TournamentData = ITournament.Data
+import TournamentOptions = ITournament.Options
 
 export namespace IEvent{
 	export interface Event{
@@ -107,11 +110,25 @@ export namespace IEvent{
 		[x: string]: any
 	}
 
+	export function parseExpands(expands: Expands) : Expands {
+		return {
+			phase: (expands != undefined && expands.phase == false) ? false : true,
+			groups: (expands != undefined && expands.groups == false) ? false : true
+		}
+	}
+
 	export function getDefaultData(): Data{
 		return {
 			tournament: ITournament.getDefaultData(),
 			event: getDefaultEventData()
 		}
+	}
+
+	export function getDefaultExpands(): Expands{
+		return {
+			phase: true,
+			groups: true
+		};
 	}
 
 	export function getDefaultEventData(): EventData{
@@ -154,11 +171,22 @@ export namespace IEvent{
 	}
 }
 
+import Data = IEvent.EventData
+import Expands = IEvent.Expands
+import EventEntity = IEvent.EventEntity
+
 
 /** EVENTS */
 
 export class Event{
-    constructor(tournamentName, eventName, expands, data, eventId){
+
+	public tournamentName: string
+	public eventName: string
+	public expands: Expands
+	public data: Data
+	public eventId: number | undefined
+
+    constructor(tournamentName: string, eventName: string, expands: Expands = IEvent.getDefaultExpands(), data: string, eventId?: number){
         this.eventId = eventId;
         this.tournamentName = tournamentName;
         this.eventName = eventName;
@@ -166,38 +194,24 @@ export class Event{
         this.data = JSON.parse(data).data;
     }
 
-    static get(tournamentName, eventName, expands){
-        return new Promise(function(resolve, reject){
-            if(!eventName)
-                return reject(new Error('Event Name cannot be null for Event'));
-            if(isNaN(eventName) && !tournamentName)
-                return reject(new Error('Tournament Name cannot be null for Event'));
-    
-            var data = {};
+    static get(tournamentName: string, eventName: string, expands: Expands){
+        return new Promise(function(resolve, reject){    
+            let data = {};
     
             // CREATE THE EXPANDS STRING
-            var expandsString = "";
-            var expandsObj = {
-                phase: (expands && expands.phase == false) ? false : true,
-                groups: (expands && expands.groups == false) ? false : true
-            };
-            for(var property in expandsObj){
-                if(expandsObj[property] instanceof Function) break;
-                else if(expandsObj[property])
-                    expandsString += 'expand[]=' + property + '&';
-            }
-
-
-            var postParams = {
+            let expandsObj = IEvent.parseExpands(expands)
+            let expandsString = createExpandsString(expandsObj)
+           
+            let postParams = {
                 type: 'event',
                 tournamentName: tournamentName,
                 eventName: eventName,
                 expands: expandsObj
             };
 
-            request('POST', API_URL, postParams)
+            NI.request('POST', API_URL, postParams)
                 .then(function(data){
-                    return resolve(new Event(tournamentName, eventName, expandsObj, data, null));
+                    return resolve(new Event(tournamentName, eventName, expandsObj, data, undefined));
                 })
                 .catch(function(err){
                     console.error('Smashgg Event: ' + err.message);
@@ -206,15 +220,16 @@ export class Event{
         })
     }
 
-    static getEventById(tournamentName = null, eventId) {
+    static getEventById(tournamentName: string, eventId: number) {
         return new Promise(function(resolve, reject){
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
             var postParams = {
                 eventId: eventId,
-            }
-            request('POST', url, postParams)
+			}
+			
+            NI.request('POST', url, postParams)
                 .then(function(data){
-                    return resolve(new Event(tournamentName, data.name, null, data, eventId));
+                    return resolve(new Event(tournamentName, data.name, undefined, data, eventId));
                 })
                 .catch(function(err){
                     console.error('Smashgg Event: ' + err.message);

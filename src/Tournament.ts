@@ -256,7 +256,7 @@ export class Tournament implements ITournament.Tournament{
             var events: EventEntity  = ThisTournament.data.entities.event;
         
             var promises: Promise<Event>[] = [];
-            events.forEach(event: EventEntity => {
+            events.forEach(event => {
                 promises.push(Event.get(ThisTournament.name, event.name));
             })
 
