@@ -1,3 +1,7 @@
+import * as NI from './util/NetworkInterface'
+import { API_URL } from './util/Common'
+
+
 
 export namespace IPlayer{
 
@@ -74,10 +78,25 @@ export namespace IPlayer{
 	}
 }
 
+import Data = IPlayer.Data
+import Entity = IPlayer.Entity
+import Options = IPlayer.Options
 
 /** Players */
 export class Player implements IPlayer.Player{
-    constructor(id, tag, name, country, state, sponsor, participantId, data){
+
+	public id: number
+	public tag: string
+	public name: string
+	public country?: string
+	public state?: string
+	public sponsor?: string
+	public participantId?: number = 0
+	public data: Entity
+
+	constructor(id: number, tag: string, name: string, country: string, 
+				state: string, sponsor: string, participantId: number, 
+				data: string){
         if(!id)
             throw new Error('Player ID cannot be null');
 
@@ -93,13 +112,13 @@ export class Player implements IPlayer.Player{
             this.data = JSON.parse(data);
     }
 
-    static resolve(data){
+    static resolve(data: Entity) : Player{
         try{
             let playerId = 0;
             let participantId = 0;
 
             for(let id in data.mutations.players){
-                if(isNaN(parseInt(id))) break;
+                if(typeof id !== 'number') break;
                 playerId = id;
             }
 
@@ -136,7 +155,7 @@ export class Player implements IPlayer.Player{
         
     }
 
-    static getFromIdArray(idArray){
+    static getFromIdArray(idArray) : {
         let postParams = {
             type: 'players',
             idArray: idArray

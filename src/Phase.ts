@@ -1,3 +1,7 @@
+import * as NI from './util/NetworkInterface'
+import { API_URL, createExpandsString, flatten } from './util/Common'
+import { PhaseGroup, Player, GGSet } from './internal'
+import { IPhaseGroup, IPlayer, IGGSet } from './internal'
 
 
 export namespace IPhase{
@@ -54,12 +58,13 @@ export namespace IPhase{
 	}
 
 	export interface Data{
-		id: number,
+		entities: Entity,
 		[x: string]: any
 	}
 
 	export interface Entity{
 		id: number,
+		groups: [IPhaseGroup.Entity],
 		[x: string]: any
 	}
 
@@ -85,28 +90,40 @@ export namespace IPhase{
 		}
 	}
 
+	export function parseExpands(expands?: Expands) : Expands{
+		return {
+			groups: (expands != undefined && expands.groups == false) ? false : true
+		};
+	}
+
 	export function parseOptions(options: Options) : Options{
 		return{
-			expands: {
-				groups: (options.expands != undefined && options.expands.groups == false) ? false : true
-			},
+			expands: parseExpands(options.expands),
 			isCached: options.isCached != undefined ? options.isCached === true : true,
 			rawEncoding: 'json'
 		}
 	}
 }
 
+import Data = IPhase.Data
+import Option = IPhase.Options
+import Expands = IPhase.Expands
 
 /** PHASES */
 
 export class Phase{
-    constructor(id, expands, data){
+
+	public id: number
+	public expands: Expands
+	public data: Data
+
+    constructor(id: number, expands: Expands, data: string){
         this.id = id;
         this.expands = expands;
         this.data = JSON.parse(data).data;
     }
 
-    static get(id, expands){
+    static get(id: number, expands: Expands){
         return new Promise(function(resolve, reject){
             if(!id)
                 return reject(new Error('ID cannot be null for Phase Group'));
@@ -114,15 +131,8 @@ export class Phase{
             var data = {};
     
             // CREATE THE EXPANDS STRING
-            var expandsString = "";
-            var expandsObj = {
-                groups: (expands && expands.groups == false) ? false : true
-            };
-            for(var property in expandsObj){
-                if(expandsObj[property] instanceof Function) break;
-                else if(expandsObj[property])
-                    expandsString += 'expand[]=' + property + '&';
-            }
+            var expandsObj = IPhase.parseExpands(expands)
+            var expandsString = createExpandsString(expandsObj);
     
             var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/phase';
             var postParams = {
@@ -131,7 +141,7 @@ export class Phase{
                 expands: expandsObj
             };
 
-            request('POST', API_URL, postParams)
+            NI.request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Phase(id, expandsObj, data));
                 })
@@ -144,42 +154,52 @@ export class Phase{
 
     getName(){
         return this.data.entities.phase['name'];
-    }
+	}
+	
     getEventId(){
         return this.data.entities.phase['eventId'];
     }
 
-    getPhaseGroups(){
-        let thisPhase = this;
+    getPhaseGroups() : Promise<PhaseGroup[]> {
+        let _this = this;
         return new Promise(function(resolve, reject){
-            let groups = [];
-            thisPhase.data.entities.groups.forEach(group => {
-                let g = PhaseGroup.get(group.id);
-                groups.push(g)
-            });
-            Promise.all(groups)
-                .then(resolve)
-                .catch(reject);
+			let groups: Promise<PhaseGroup>[] = []
+			
+			if(_this.data.entities.groups){
+				_this.data.entities.groups.forEach(group => {
+					let g: Promise<PhaseGroup> = PhaseGroup.get(group.id);
+					groups.push(g)
+				});
+			}
+			Promise.all(groups)
+				.then(resolve)
+				.catch(reject);
         })
     }
 
-    getPhasePlayers() {
-        let thisPhase = this;
+    getPhasePlayers() : Promise<Player[]> {
+        let _this = this;
         return new Promise(function(resolve, reject) {
             // get phase groups
-            let phasePromises = thisPhase.data.entities.groups.map(group => {
-                return PhaseGroup.get(group.id);
-            });
+			let phasePromises: Promise<PhaseGroup>[] = []
+			
+			if(_this.data.entities.groups){
+				_this.data.entities.groups.map(group => {
+					return PhaseGroup.get(group.id);
+				});
+			}
+
             Promise.all(phasePromises)
                 .then(phaseGroups => {
-                    let playerPromises = [];
-                    phaseGroups.forEach(group => {
-                        playerPromises.push(group.getPlayers());     
-                    });
+					let playerPromises: Promise<Player[]>[] = [];
+					phaseGroups.forEach(group => {
+						playerPromises.push(group.getPlayers());     
+					});
                     Promise.all(playerPromises)
                         .then(allPlayers => {
                             // Should give a unique list of players
-                            let players = [].concat(...allPlayers);
+							let players: Player[] = []
+							players = players.concat(...allPlayers);
                             return resolve(players);
                         }).catch(reject);
                 })
@@ -198,7 +218,7 @@ export class Phase{
                 })
                 return Promise.all(idPromises)
                     .then(idArrays => { 
-                        return Promise.resolve(idArrays.flatten());
+                        return Promise.resolve(flatten(idArrays));
                     })
                     .catch(console.error);
             })
@@ -206,30 +226,35 @@ export class Phase{
     }
 
     getPhaseSets() {
-        let thisPhase = this;
+        let _this = this;
         return new Promise (function(resolve, reject) {
-            let phasePromises = thisPhase.data.entities.groups.map(group => {
-                return PhaseGroup.get(group.id);
-            });
+			let phasePromises: Promise<PhaseGroup>[] = []
+
+			if(_this.data.entities.group){
+				_this.data.entities.groups.map(group => {
+					return PhaseGroup.get(group.id);
+				});
+			}
+
             Promise.all(phasePromises)
-            .then(phaseGroups => {
-                let setPromises = [];
-                phaseGroups.forEach(group => {
-                    setPromises.push(group.getMatches());
-                })
-                Promise.all(setPromises)
-                .then(phaseSets => {
-                    let allSets = [];
-                    phaseSets.forEach(sets => {
-                        sets.forEach(set => {
-                            allSets.push(set);
-                        })
-                    })
-                    return resolve(allSets);
-                })
-                .catch(reject);
-            })
-            .catch(reject);
+				.then(phaseGroups => {
+					let setPromises: Promise<GGSet[]>[] = [];
+					phaseGroups.forEach(group => {
+						setPromises.push(group.getMatches());
+					})
+					Promise.all(setPromises)
+						.then(phaseSets => {
+							let allSets: GGSet[] = [];
+							phaseSets.forEach(sets => {
+								sets.forEach(set => {
+									allSets.push(set);
+								})
+							})
+							return resolve(allSets);
+						})
+						.catch(reject);
+				})
+				.catch(reject);
         })
     }
 }

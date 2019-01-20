@@ -1,5 +1,5 @@
 import * as NI from './util/NetworkInterface'
-import { API_URL, ICommon, createExpandsString } from './util/Common'
+import { API_URL, ICommon, createExpandsString, flatten } from './util/Common'
 import { Tournament, Phase, PhaseGroup, Player, GGSet } from './internal'
 import { ITournament, IPhase, IPhaseGroup, IPlayer, IGGSet } from './internal'
 
@@ -255,42 +255,50 @@ export class Event{
     }
 
     getEventPhases(){
-        let thisEvent = this;
+        let _this = this;
         return new Promise(function(resolve, reject){
-            let promises = thisEvent.data.entities.phase.map(p => {
-                return Phase.get(p.id);
-            });
-            Promise.all(promises).then(resolve).catch(reject);
+			let promises: Promise<Phase>[] = []
+			if(_this.data.entities.phase){
+				promises = _this.data.entities.phase.map(p => {
+					return Phase.get(p.id);
+				});
+			}
+			Promise.all(promises).then(resolve).catch(reject);
         });
     }
 
     getEventMatchIds(){
-        var groupPromises = this.data.entities.groups.map(group => { 
-            return PhaseGroup.get(group.id).catch(console.error); 
-        });
-        return Promise.all(groupPromises)
-            .then(groups => { 
-                let idPromises = groups.map(group => { 
-                    return group.getMatchIds(); 
-                })
-                return Promise.all(idPromises)
-                    .then(idArrays => { 
-                        return Promise.resolve(idArrays.flatten());
-                    })
-                    .catch(console.error);
-            })
-            .catch(console.error)
+		if(this.data.entities.groups){
+			let groupPromises = this.data.entities.groups.map(group => { 
+				return PhaseGroup.get(group.id).catch(console.error); 
+			});
+			return Promise.all(groupPromises)
+				.then(groups => { 
+					let idPromises: Promise<number>[] = groups.map(group => { 
+						return group.getMatchIds(); 
+					})
+					return Promise.all(idPromises)
+						.then(idArrays => { 
+							return Promise.resolve(flatten(idArrays));
+						})
+						.catch(console.error);
+				})
+				.catch(console.error)
+		}
     }
     
     getEventPhaseGroups(){
-        let thisEvent = this;
+        let _this = this;
         return new Promise(function(resolve, reject){
-            let promises = thisEvent.data.entities.groups.map(group => {
-                return PhaseGroup.get(group.id);
-            });
-            Promise.all(promises)
-                .then(resolve)
-                .catch(reject);
+			let promises: Promise<PhaseGroup>[] = []
+			if(_this.data.entities.groups){
+				promises = _this.data.entities.groups.map(group => {
+					return PhaseGroup.get(group.id);
+				});
+			}
+			Promise.all(promises)
+				.then(resolve)
+				.catch(reject);
         });
     }
 }
