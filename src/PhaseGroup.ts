@@ -172,7 +172,7 @@ export class PhaseGroup{
 
 		let ids: number[] = [];
 		if(_this.data.entities.sets){
-			let ids = _this.data.entities.sets.map(set => {
+			ids = _this.data.entities.sets.map(set => {
 				return set.id;
 			})
 		}
@@ -180,76 +180,15 @@ export class PhaseGroup{
     }
     
     getSets() : Promise<GGSet[]>{
-		let _this = this;
-		let sets: Promise<GGSet>[] = [];
-		if(this.data.entities.sets){
-			sets = this.data.entities.sets.map(set => {
-				return new Promise(function(resolve, reject){
-					//var p = new Promise(function(resolve, reject){
-					let isComplete = set.completedAt != null;
-					
-					let winnerId = !isComplete ? null : 
-							set.entrant1Score > set.entrant2Score ? 
-								set.entrant1Id : 
-								set.entrant2Id;
-						
-					let loserId = !isComplete ? null : 
-						winnerId != set.entrant1Id ? 
-							set.entrant1Id : set.entrant2Id;
-
-					_this.findPlayersByIds(winnerId, loserId)
-						.then(players: Player[] => {
-							let S = new GGSet(
-								set.id, 
-								set.eventId, 
-								set.fullRoundText, 
-								players[0],
-								players[1],
-								isComplete,
-								winnerId,
-								loserId,
-								winnerId,
-								loserId,
-								JSON.stringify(set)
-							);
-							return resolve(S);
-						})
-						.catch(reject)
-					});
+		return this.getMatchIds()
+			.then(ids => {
+				return GGSet.getFromIdArray(ids)
 			})
-		}
-        return Promise.all(sets);
     }
 
-    findWinnerLoserByParticipantIds(winnerId: number, loserId: number) : Promise<Player[]> {
+    findPlayerByParticipantId(id: number) : Promise<Player> {
         var _this = this;
         return new Promise(function(resolve, reject){
-            _this.getPlayers()
-                .then(players => {
-                    let winnerPlayer = players.filter(e => {return e.participantId == winnerId});
-                    if(winnerPlayer.length)
-                        winnerPlayer = winnerPlayer[0];
-                    else return reject(new Error('No player for id ' + winnerId));
-
-                    let loserPlayer = players.filter(e => {return e.participantId == loserId});
-                    if(loserPlayer.length)
-                        loserPlayer = loserPlayer[0];
-                    else return reject(new Error('No player for id ' + loserId));
-                    
-                    return resolve({
-                        winnerPlayer: winnerPlayer,
-                        loserPlayer: loserPlayer
-                    })
-                    
-                })
-                .catch(console.error)
-            });
-    }
-
-    findPlayersByParticipantId(id: number) : Promise<Player[] | null> {
-        var _this = this;
-        return new Promise(function(resolve, reject){
-            if(!id) return resolve(null);
             _this.getPlayers()
                 .then(players => {
                     let player = players.filter(e => {return e.participantId == id});
@@ -262,10 +201,10 @@ export class PhaseGroup{
     }
 
     findPlayersByIds(...ids: number[]) : Promise<Player[]>{
-        let promises = [];
+        let promises: Promise<Player>[] = [];
         for(var prop in arguments){
             if(typeof prop === 'number')
-                promises.push(this.findPlayersByParticipantId(arguments[prop]));
+                promises.push(this.findPlayerByParticipantId(arguments[prop]));
         }
         return Promise.all(promises);
     }

@@ -123,7 +123,7 @@ export class Phase{
         this.data = JSON.parse(data).data;
     }
 
-    static get(id: number, expands: Expands){
+    static get(id: number, expands: Expands = IPhase.getDefaultExpands()) : Promise<Phase>{
         return new Promise(function(resolve, reject){
             if(!id)
                 return reject(new Error('ID cannot be null for Phase Group'));
@@ -240,7 +240,7 @@ export class Phase{
 				.then(phaseGroups => {
 					let setPromises: Promise<GGSet[]>[] = [];
 					phaseGroups.forEach(group => {
-						setPromises.push(group.getMatches());
+						setPromises.push(group.getSets());
 					})
 					Promise.all(setPromises)
 						.then(phaseSets => {

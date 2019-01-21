@@ -194,7 +194,7 @@ export class Event{
         this.data = JSON.parse(data).data;
     }
 
-    static get(tournamentName: string, eventName: string, expands: Expands){
+    static get(tournamentName: string, eventName: string, expands: Expands = IEvent.getDefaultExpands()) : Promise<Event>{
         return new Promise(function(resolve, reject){    
             let data = {};
     
@@ -220,14 +220,15 @@ export class Event{
         })
     }
 
-    static getEventById(tournamentName: string, eventId: number) {
+    static getEventById(tournamentName: string, eventId: number) : Promise<Event> {
         return new Promise(function(resolve, reject){
-            var url = 'http://smashggcors.us-west-2.elasticbeanstalk.com/event';
+			
             var postParams = {
-                eventId: eventId,
+				type: 'event',
+                eventId: eventId
 			}
 			
-            NI.request('POST', url, postParams)
+            NI.request('POST', API_URL, postParams)
                 .then(function(data){
                     return resolve(new Event(tournamentName, data.name, undefined, data, eventId));
                 })
@@ -254,27 +255,29 @@ export class Event{
         return new Date(this.data.entities.event['endAt']);
     }
 
-    getEventPhases(){
-        let _this = this;
-        return new Promise(function(resolve, reject){
-			let promises: Promise<Phase>[] = []
-			if(_this.data.entities.phase){
-				promises = _this.data.entities.phase.map(p => {
-					return Phase.get(p.id);
-				});
-			}
-			Promise.all(promises).then(resolve).catch(reject);
-        });
+    getEventPhases() : Promise<Phase[]> {
+		if(this.data.entities.phase){
+			let _this = this;
+			return new Promise(function(resolve, reject){
+				let promises: Promise<Phase>[] = []
+				if(_this.data.entities.phase){
+					promises = _this.data.entities.phase.map(p => {
+						return Phase.get(p.id);
+					});
+				}
+				Promise.all(promises).then(resolve).catch(reject);
+			});
+		} else throw new Error('no phase property on entities')
     }
 
-    getEventMatchIds(){
+    getEventMatchIds() : Promise<number[]> {
 		if(this.data.entities.groups){
 			let groupPromises = this.data.entities.groups.map(group => { 
 				return PhaseGroup.get(group.id).catch(console.error); 
 			});
 			return Promise.all(groupPromises)
 				.then(groups => { 
-					let idPromises: Promise<number>[] = groups.map(group => { 
+					let idPromises: Promise<number[]>[] = groups.map(group => { 
 						return group.getMatchIds(); 
 					})
 					return Promise.all(idPromises)
@@ -284,10 +287,11 @@ export class Event{
 						.catch(console.error);
 				})
 				.catch(console.error)
-		}
+		} 
+		else throw new Error('no groups property on entities')
     }
     
-    getEventPhaseGroups(){
+    getEventPhaseGroups() : Promise<PhaseGroup[]> {
         let _this = this;
         return new Promise(function(resolve, reject){
 			let promises: Promise<PhaseGroup>[] = []

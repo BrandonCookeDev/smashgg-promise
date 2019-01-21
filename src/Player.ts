@@ -127,16 +127,15 @@ export class Player implements IPlayer.Player{
 
 	public id: number
 	public tag: string
+	public data: Data = IPlayer.getDefaultData()
 	public name?: string
 	public country?: string
 	public state?: string
 	public sponsor?: string
 	public participantId?: number = 0
-	public data: Data = IPlayer.getDefaultData()
 
-	constructor(id: number, tag: string, name?: string, country?: string, 
-				state?: string, sponsor?: string, participantId?: number, 
-				data?: string){
+	constructor(id: number, tag: string, data: string, name?: string, country?: string, 
+				state?: string, sponsor?: string, participantId?: number){
         if(!id)
             throw new Error('Player ID cannot be null');
 
@@ -167,12 +166,12 @@ export class Player implements IPlayer.Player{
             let P = new Player(
                 +playerId,
                 playerDetails.gamerTag,
+                JSON.stringify(entity),
                 playerDetails.name,
                 playerDetails.country,
                 playerDetails.state,
                 playerDetails.prefix,
-                +entity.id,
-                JSON.stringify(entity)
+                +entity.id
             );
             return P;
         } catch(e){
@@ -206,7 +205,7 @@ export class Player implements IPlayer.Player{
                 return data.map(player => { return Player.resolve(player); });
             })
             .catch(console.error);
-    }
+	}
 
     getId(){
         return this.id;
