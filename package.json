@@ -27,11 +27,13 @@
   },
   "homepage": "https://github.com/BrandonCookeDev/smashgg-promise#readme",
   "devDependencies": {
-    "@types/core-js": "^0.9.36",
     "chai": "^4.1.2",
     "express": "^4.16.3",
     "mocha": "^5.2.0",
     "typescript": "^3.2.4",
     "xmlhttprequest": "^1.8.0"
+  },
+  "dependencies": {
+    "@types/core-js": "^2.5.0"
   }
 }
