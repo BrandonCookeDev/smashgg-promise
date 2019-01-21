@@ -7,44 +7,16 @@ import { IPhaseGroup, IPlayer, IGGSet } from './internal'
 export namespace IPhase{
 	export interface Phase{
 		id: number
-		url: string
 		data: Data | string
-		isCached: boolean
-		rawEncoding: string
-		expandsString: string
 		expands: Expands
-
-		loadData(data: Data) : Data | string
-		
-		getData() : Data
-		
-		//getPhase(id: number, options: Options) : Promise<Phase> 
-		
-		load(): Promise<Data | string> 
 		
 		getPhaseGroups(options: Options) : Promise<Array<PhaseGroup>>
-		
 		getSets(options: Options) : Promise<Array<GGSet>>
-		
 		getPlayers(options: Options) : Promise<Array<Player>>
-		
 		getIncompleteSets(options: Options) : Promise<Array<GGSet>>
-		
 		getCompleteSets(options: Options) : Promise<Array<GGSet>>
-		
-		getSetsXMinutesBack(minutesBack: number, options: Options) : Promise<Array<GGSet>>
-		
-		getFromDataEntities(prop: string) : any
-		
 		getName() : string
-		
 		getEventId() : number
-		
-		nullValueString(prop: string) : string
-		
-		emitPhaseReady() : void
-		
-		emitPhaseError(err: Error) : void
 	}
 
 	export interface Options{
@@ -111,7 +83,7 @@ import Expands = IPhase.Expands
 
 /** PHASES */
 
-export class Phase{
+export class Phase implements IPhase.Phase{
 
 	public id: number
 	public expands: Expands
@@ -207,7 +179,7 @@ export class Phase{
         })
     }
 
-    getPhaseMatchIds(){
+    getPhaseSetIds(){
         var promises = this.data.entities.groups.map(group => { 
             return PhaseGroup.get(group.id).catch(console.error); 
         });
@@ -225,36 +197,37 @@ export class Phase{
             .catch(console.error);
     }
 
-    getPhaseSets() {
-        let _this = this;
-        return new Promise (function(resolve, reject) {
-			let phasePromises: Promise<PhaseGroup>[] = []
-
-			if(_this.data.entities.group){
-				_this.data.entities.groups.map(group => {
-					return PhaseGroup.get(group.id);
-				});
-			}
-
-            Promise.all(phasePromises)
-				.then(phaseGroups => {
-					let setPromises: Promise<GGSet[]>[] = [];
-					phaseGroups.forEach(group => {
-						setPromises.push(group.getSets());
-					})
-					Promise.all(setPromises)
-						.then(phaseSets => {
-							let allSets: GGSet[] = [];
-							phaseSets.forEach(sets => {
-								sets.forEach(set => {
-									allSets.push(set);
-								})
-							})
-							return resolve(allSets);
-						})
-						.catch(reject);
+	getSets() : Promise<GGSet[]> {
+		if(this.data.entities.group){
+			return this.getPhaseGroups()
+				.then(groups => {
+					return Promise.all(groups.map(group => group.getSets()))
 				})
-				.catch(reject);
-        })
-    }
+				.then(sets => flatten(sets))
+		} else throw new Error('Phase.getSets: no group property on entities');
+	}
+
+	getIncompleteSets() : Promise<GGSet[]> {
+		if(this.data.entities.group){
+			return this.getSets()
+				.then(sets => sets.filter(set => set.isComplete === false));
+		} else throw new Error('Phase.getSets: no group property on entities');
+	}
+
+	getCompleteSets() : Promise<GGSet[]> {
+		if(this.data.entities.group){
+			return this.getSets()
+				.then(sets => sets.filter(set => set.isComplete === true));
+		} else throw new Error('Phase.getSets: no group property on entities');
+	}
+
+	getPlayers() : Promise<Player[]> {
+		if(this.data.entities.group){
+			return this.getPhaseGroups()
+				.then(groups => {
+					return Promise.all(groups.map(group => group.getPlayers()));
+				})
+				.then(players => flatten(players))
+		} else throw new Error('Phase.getSets: no group property on entities');
+	}
 }

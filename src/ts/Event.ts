@@ -11,71 +11,27 @@ import TournamentOptions = ITournament.Options
 
 export namespace IEvent{
 	export interface Event{
-		id: number 
-		url: string 
-		data: Data | string
-		eventId: string | number
-		expands: Expands 
-		expandsString: string 
-		tournamentId: string | undefined
-		tournamentSlug: string 
-		isCached: boolean 
-		rawEncoding: string 
-		phases: Array<Phase> 
-		groups: Array<PhaseGroup> 
-		
-		loadData(data: object): object | string 
-	
-		getData() : Data
-				
-		//getEvent(eventName: string, tournamentName: string, options: Options) : Promise<Event>
-	
-		//getEventById(id: number, options: Options) : Promise<Event>
-			
-		load(options: Options, tournamentOptions: TournamentOptions) : Promise<Data | string>
+		tournamentName: string
+		eventName: string
+		expands: Expands
+		data: EventData
+		eventId? : number
 				
 		getEventPhases(options: Options) : Promise<Array<Phase>>
-	
-		getEventPhaseGroups(options: Options) : Promise<Array<PhaseGroup>>
-			
-		getSets(options: Options) : Promise<Array<GGSet>>
-			
-		getPlayers(options: Options) : Promise<Array<Player>>
-				
+		getEventPhaseGroups(options: Options) : Promise<Array<PhaseGroup>>		
+		getSets(options: Options) : Promise<Array<GGSet>>		
+		getPlayers(options: Options) : Promise<Array<Player>>			
 		getIncompleteSets(options: Options) : Promise<Array<GGSet>>
-	
 		getCompleteSets(options: Options) : Promise<Array<GGSet>>
-			
-		getSetsXMinutesBack(minutesBack: number, options: Options) : Promise<Array<GGSet>> 
-			
-		getFromEventEntities(prop: string) : any
-
-		getFromTournamentEntities(prop: string) : any
-
 		getId() : number
-			
-		getName() : string
-			
+		getName() : string	
 		getTournamentId() : number
-			
 		getSlug() : string
-			
 		getTournamentSlug() : string
-			
 		getStartTime() : Date | null
-			
 		getStartTimeString() : string | null
-			
 		getEndTime() : Date | null
-			
-		getEndTimeString() : string | null
-			
-		nullValueString(prop: string) : string
-	
-		emitEventReady() : void
-			
-		emitEventError(err: Error) : void
-		
+		getEndTimeString() : string | null		
 	}
 
 	export interface Options{
@@ -178,7 +134,7 @@ import EventEntity = IEvent.EventEntity
 
 /** EVENTS */
 
-export class Event{
+export class Event implements IEvent.Event{
 
 	public tournamentName: string
 	public eventName: string
@@ -237,7 +193,19 @@ export class Event{
                     return reject(err);
                 })
         })
-    }
+	}
+	
+	getId(){
+		return this.data.entities.event['id'];
+	}
+
+	getTournamentId(){
+		return this.data.entities.event['tournamentId']
+	}
+
+	getTournamentSlug(){
+		return this.data.entities.event['slug']
+	}
 
     getName(){
         return this.data.entities.event['name'];
@@ -248,12 +216,26 @@ export class Event{
     }
 
     getStartTime(){
-        return new Date(this.data.entities.event['startAt']);
-    }
+		let d = new Date(0);
+		d.setUTCSeconds(this.data.entities.event['startAt']);
+        return d;
+	}
+	
+	getStartTimeString(){
+		let d = this.getStartTime();
+		return d.toLocaleDateString();
+	}
 
     getEndTime(){
-        return new Date(this.data.entities.event['endAt']);
-    }
+		let d = new Date(0);
+		d.setUTCSeconds(this.data.entities.event['endAt']);
+        return d;
+	}
+	
+	getEndTimeString(){
+		let d = this.getEndTime();
+		return d.toLocaleDateString();
+	}
 
     getEventPhases() : Promise<Phase[]> {
 		if(this.data.entities.phase){
@@ -268,9 +250,24 @@ export class Event{
 				Promise.all(promises).then(resolve).catch(reject);
 			});
 		} else throw new Error('no phase property on entities')
+	}
+	
+    getEventPhaseGroups() : Promise<PhaseGroup[]> {
+        let _this = this;
+        return new Promise(function(resolve, reject){
+			let promises: Promise<PhaseGroup>[] = []
+			if(_this.data.entities.groups){
+				promises = _this.data.entities.groups.map(group => {
+					return PhaseGroup.get(group.id);
+				});
+			}
+			Promise.all(promises)
+				.then(resolve)
+				.catch(reject);
+        });
     }
 
-    getEventMatchIds() : Promise<number[]> {
+    getEventSetIds() : Promise<number[]> {
 		if(this.data.entities.groups){
 			let groupPromises = this.data.entities.groups.map(group => { 
 				return PhaseGroup.get(group.id).catch(console.error); 
@@ -289,20 +286,42 @@ export class Event{
 				.catch(console.error)
 		} 
 		else throw new Error('no groups property on entities')
-    }
-    
-    getEventPhaseGroups() : Promise<PhaseGroup[]> {
-        let _this = this;
-        return new Promise(function(resolve, reject){
-			let promises: Promise<PhaseGroup>[] = []
-			if(_this.data.entities.groups){
-				promises = _this.data.entities.groups.map(group => {
-					return PhaseGroup.get(group.id);
-				});
-			}
-			Promise.all(promises)
-				.then(resolve)
-				.catch(reject);
-        });
-    }
+	}
+	
+	getSets() : Promise<GGSet[]> {
+		if(this.data.entities.groups){
+			return this.getEventSetIds()
+				.then( (ids: number[]) => {
+					return Promise.all(ids.map(id => GGSet.get(id)))
+				})
+				.then(sets => {
+					return flatten(sets)
+				})
+		} else throw new Error('Event.getSets: no groups property on entities')
+	}
+
+	getIncompleteSets() : Promise<GGSet[]> {
+		if(this.data.entities.groups){
+			return this.getSets()
+				.then(sets => sets.filter(set => set.isComplete === false))
+		} else throw new Error('Event.getSets: no groups property on entities')
+	}
+
+	getCompleteSets() : Promise<GGSet[]> {
+		if(this.data.entities.groups){
+			return this.getSets()
+				.then(sets => sets.filter(set => set.isComplete === true))
+		} else throw new Error('Event.getSets: no groups property on entities')
+	}
+	
+	getPlayers() : Promise<Player[]> {
+		if(this.data.entities.event){
+			return this.getEventPhaseGroups()
+				.then(groups => {
+					return groups.map(group => group.getPlayers())
+				})
+				.then(players => flatten(players))
+		} else throw new Error('Event.getPlayers: no event property on entities')
+	}
+
 }

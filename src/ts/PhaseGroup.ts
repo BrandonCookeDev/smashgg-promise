@@ -10,29 +10,14 @@ export namespace IPhaseGroup{
 
 	export interface PhaseGroup{
 		id: number
-		url: string
-		data: Data | string
-		rawEncoding: string
-		expandsString: string
+		data: Data
 		expands: Expands
-		players: Array<Player>
-		sets: Array<GGSet>
 
-		loadData(data: Data) : Data | string
-		getData() : Data
-		load() : Promise<Data | string>
 		getPlayers(options: Options) : Promise<Array<Player>>
 		getSets(options: Options) : Promise<Array<GGSet>>
 		getCompleteSets(options: Options) : Promise<Array<GGSet>>
 		getIncompleteSets(options: Options) : Promise<Array<GGSet>>
-		getSetsXMinutesBack(minutes: number, options: Options) : Promise<Array<GGSet>>
-		resolveSet(set: IGGSet.SetEntity) : Promise<GGSet | undefined>
-		getFromDataEntities(prop: string) : any
-		getPhaseId() : number
-		getEntrants() : Array<IPlayer.Entity> | [] 
-		nullValueString(prop: string) : string
-		emitPhaseGroupReady() : void
-		emitPhaseGroupError(err: Error) : void
+		getId() : number
 		findPlayerByParticipantId(id: number) : Promise<Player | undefined>
 	}
 
@@ -110,7 +95,7 @@ import Expands = IPhaseGroup.Expands
 
 /** PHASE GROUPS */
 
-export class PhaseGroup{
+export class PhaseGroup implements IPhaseGroup.PhaseGroup{
 
 	public id: number
 	public expands: Expands
@@ -147,9 +132,9 @@ export class PhaseGroup{
                     return reject(err);
                 })
         })
-    }
+	}
 
-    getPhaseId() : number{
+    getId() : number{
         return this.data.entities.groups['phaseId'];
     }
 
@@ -167,7 +152,7 @@ export class PhaseGroup{
         });
     }
 
-    getMatchIds() : Promise<number[]>{
+    getSetIds() : Promise<number[]>{
 		let _this = this;
 
 		let ids: number[] = [];
@@ -180,11 +165,21 @@ export class PhaseGroup{
     }
     
     getSets() : Promise<GGSet[]>{
-		return this.getMatchIds()
+		return this.getSetIds()
 			.then(ids => {
 				return GGSet.getFromIdArray(ids)
 			})
-    }
+	}
+	
+	getIncompleteSets() : Promise<GGSet[]> {
+		return this.getSets()
+			.then(sets => sets.filter(set => set.isComplete === false));
+	}
+
+	getCompleteSets() : Promise<GGSet[]> {
+		return this.getSets()
+			.then(sets => sets.filter(set => set.isComplete === true));
+	}
 
     findPlayerByParticipantId(id: number) : Promise<Player> {
         var _this = this;
