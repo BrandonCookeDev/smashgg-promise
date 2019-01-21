@@ -1,4 +1,7 @@
-
+import * as NI from './util/NetworkInterface'
+import { API_URL } from './util/Common'
+import { Player } from './internal'
+import { IPlayer } from './internal'
 
 export namespace IGGSet{
 
@@ -6,40 +9,37 @@ export namespace IGGSet{
 		id: number
 		eventId: number
 		round: string
-		player1?: Player
-		player2?: Player
 		isComplete: boolean
+		data: SetEntity
+		winner?: Player
+		loser?: Player
 		score1?: number
 		score2?: number
 		winnerId?: number
 		loserId?: number
-		data?: SetEntity
 
 		//getSet(id: number, options: ICommon.Options) : Promise<GGSet>
 		//resolve(data: Entity) : Promise<GGSet>
 		
 		getRound() : string
-		getPlayer1() : Player | null
-		getPlayer2() : Player | null
-		getWinnerId() : number | null
-		getLoserId() : number | null
-		getIsComplete() : boolean | null
-		getPlayer1Score() : number | null
-		getPlayer2Score() : number | null
+		getWinner() : Player | undefined
+		getLoser() : Player | undefined
+		getWinnerId() : number | undefined
+		getLoserId() : number | undefined
+		getIsComplete() : boolean | undefined
+		getWinnerScore() : number | undefined
+		getLoserScore() : number | undefined
 		getWinner() : Player | undefined
 		getLoser() : Player | undefined
 		getGames() : number | string
-		getBestOfCount() : number | string
-		getWinnerScore() : number | string
-		getLoserScore() : number | string
-		getBracketId() : number | string 
-		getMidsizeRoundText() : string
-		getPhaseGroupId() : number | string
-		getWinnersTournamentPlacement() : number | string
-		getLosersTournamentPlacement() : number | string
-		getStartedAt() : Date | null 
-		getCompletedAt() : Date | null 
-		nullValueString(prop: string) : string
+		getBestOfCount() : number | undefined
+		getWinnerScore() : number | undefined
+		getLoserScore() : number | undefined
+		getBracketId() : number | undefined 
+		getMidsizeRoundText() : undefined
+		getPhaseGroupId() : number | undefined
+		getStartedAt() : Date | undefined 
+		getCompletedAt() : Date | undefined 
 	}
 
 	export interface Data{
@@ -67,88 +67,166 @@ export namespace IGGSet{
 	}
 }
 
+import Data = IGGSet.Data
+import Entity = IGGSet.Entity
+import SetEntity = IGGSet.SetEntity
 
 /** Sets */
 export class GGSet implements IGGSet.GGSet{
-    constructor(id, eventId, round, player1, player2, isComplete=false, score1=0, score2=0, winnerId, loserId, data){
+
+	public id: number
+	public eventId: number
+	public round: string
+	public isComplete: boolean
+	public data: SetEntity
+
+	public winner?: Player
+	public loser?: Player
+	public score1?: number
+	public score2?: number
+	public winnerId?: number
+	public loserId?: number
+
+	constructor(id: number, eventId: number, round: string, 
+				isComplete: boolean=false, data: SetEntity,
+				winner: Player | undefined = undefined,
+				loser: Player | undefined = undefined,
+				score1: number=0, score2: number=0, 
+				winnerId: number = 0, loserId: number = 0){
 		if(!id)
 			throw new Error('Id for Set cannot be null');
 		if(!eventId)
 			throw new Error('Event Id for Set cannot be null');
 		if(!round)
 			throw new Error('Round for Set cannot be null');
-		if(!(player1 instanceof ggPlayer))
+		if(winner != undefined && !(winner instanceof Player))
 			throw new Error('Winner Player for Set cannot be null, and must be an instance of ggPlayer');
-		if(!(player2 instanceof ggPlayer))
+		if(loser != undefined && !(loser instanceof Player))
             throw new Error('Loser Player for Set cannot be null, and must be an instance of ggPlayer');
 
 		this.id = id;
 		this.eventId = eventId;
 		this.round = round;
-		this.player1 = player1;
-		this.player2 = player2;
+		this.data = data;
+
+		this.winner = winner;
+		this.loser = loser;
 		this.score1 = score1;
 		this.score2 = score2;
 		this.isComplete = isComplete;
 		this.winnerId = winnerId;
 		this.loserId = loserId;
+	}
+	
+	static resolve(data: Data) : Promise<GGSet>{
+		return new Promise(function(resolve, reject){
+			let playerIds: number[] = [data.entities.sets.winnerId, data.entities.sets.loserId].filter(id => id != undefined) as number[]
+			Player.getFromIdArray(playerIds)
+				.then(players => {
+					let winner: Player | undefined = data.entities.sets.winnerId ?
+						players.filter(player => player.id === data.entities.sets.winnerId)[0] :
+						undefined
+					let loser: Player | undefined = data.entities.sets.loserId ?
+						players.filter(player => player.id === data.entities.sets.loserId)[0] :
+						undefined
 
-		this.data = data;
-    }
+					let winnerScore = Math.max.apply(null, ([data.entities.sets.entrant1Score, data.entities.sets.entrant2Score].filter(score => score != undefined)))
+					let loserScore = Math.min.apply(null, ([data.entities.sets.entrant1Score, data.entities.sets.entrant2Score].filter(score => score != undefined)))
+					
+					
+					return new GGSet(
+						data.entities.sets.id,
+						data.entities.sets.eventId,
+						data.entities.sets.fullRoundText,
+						data.entities.sets.completedAt != undefined,
+						data.entities.sets,
+						winner,
+						loser,
+						winnerScore,
+						loserScore,
+						winner != undefined ? winner.id : 0,
+						loser != undefined ? loser.id : 0,
+					)
+				})
+				.catch(reject)
+		})
+	}
 
-    static get(id){
+    static get(id: number) : Promise<GGSet>{
         let postParams = {
             type: 'set',
             id: id
         }
 
-        return request('POST', API_URL, postParams)
-            .then(data => {
-                return resolve(data);
+        return NI.request('POST', API_URL, postParams)
+            .then( (data: Data) => {
+                return GGSet.resolve(data);
             }) 
             .catch(console.error);
         
     }
 
-    static getFromIdArray(idArray){
+    static getFromIdArray(idArray: number[]) : Promise<GGSet[]>{
         let postParams = {
             type: 'sets',
             idArray: idArray
         }
 
-        return request('POST', API_URL, postParams)
-            .then(data => {
-                return data.map(set => { return resolve(set); });
+        return NI.request('POST', API_URL, postParams)
+            .then( (data: Data[]) => {
+                return Promise.all(
+					data.map(set => { 
+						return GGSet.resolve(set); 
+					}
+				));
             })
             .catch(console.error);
     }
 
-    getRound(){
-        return this.round;
-    }
+	getIsComplete() : boolean{
+		return this.isComplete;
+	}
 
-    getWinnerId(){
+    getRound() : string {
+        return this.round;
+	}
+	
+	getWinner() : Player | undefined{
+		return this.winner;
+	}
+
+	getLoser() : Player | undefined{
+		return this.loser;
+	}
+
+    getWinnerId() : number | undefined{
         return this.winnerId;
     }
 
-    getLoserId(){
+    getLoserId() : number | undefined{
         return this.loserId;
-    }
+	}
 
     getGames(){
         return this.data.games
     }
 
-    getBestOfCount(){
+    getBestOfCount() : number | undefined{
         return this.data.bestOf 
     }
 
-    getWinnerScore(){
-        return this.score1 > this.score2 ? this.score1 : this.score2;
+    getWinnerScore() : number | undefined{
+		if(this.score1 && this.score2)
+			return this.score1 > this.score2 ? this.score1 : this.score2;
+		else if(this.score1 && !this.score2) return this.score1
+		else if(this.score2 && !this.score1) return this.score2
+		else return undefined
     }
 
     getLoserScore(){
-        return this.score1 < this.score2 ? this.score2 : this.score1;
+		if(this.score1 && this.score2)
+			return this.score1 < this.score2 ? this.score2 : this.score1;
+		else return undefined
     }
 
     getBracketId(){
@@ -165,7 +243,7 @@ export class GGSet implements IGGSet.GGSet{
 
     /*
     getWinnersTournamentPlacement(){
-        return this.WinnerPlayer.getFinalPlacement();
+        return this.winner.getFinalPlacement();
     }
 
     getLosersTournamentPlacement(){
@@ -173,11 +251,15 @@ export class GGSet implements IGGSet.GGSet{
     }
     */
 
-    getCompletedAt(){
-        return this.data.completedAt;
+    getCompletedAt() : Date | undefined{
+		let ret = new Date(0);
+		this.data.completedAt ? ret.setUTCSeconds(this.data.completedAt) : undefined;
+		return ret;		
     }
 
-    getStartedAt(){
-        return this.data.startedAt;
+    getStartedAt() : Date | undefined{
+		let ret = new Date(0);
+		this.data.startedAt ? ret.setUTCSeconds(this.data.startedAt) : undefined;
+		return ret;
     }
 }

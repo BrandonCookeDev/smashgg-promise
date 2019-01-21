@@ -13,9 +13,8 @@ export namespace IPlayer{
 		state?: string
 		sponsor?: string
 		participantId?: number
-		data?: Entity
+		data?: Data
 
-		loadData(data: Entity) : void
 		//getPlayer(id: number, options: Options) : Promise<Player>
 		//resolveEntities(player: Entity) : Player
 		//resolve(data: Entity) : Player
@@ -27,13 +26,10 @@ export namespace IPlayer{
 		getSponsor(): string | undefined
 		getParticipantId() : number | undefined
 		getFinalPlacement() : number | undefined
-		nullValueString(prop: string) : string
 	}
 
 	export interface Data{
-		id: number,
 		entities: Entity,
-		mutations: any,
 		[x: string]: any
 	}
 
@@ -62,8 +58,8 @@ export namespace IPlayer{
 	export interface Players{
 		[x: string]: {
 			id: number,
-			name?: string,
 			gamerTag: string,
+			name?: string,
 			country?: string,
 			state?: string,
 			prefix?: string,
@@ -76,6 +72,50 @@ export namespace IPlayer{
 		isCached?: boolean,
 		rawEncoding?: string
 	}
+
+	export function getDefaultData() : Data{
+		return {
+			entities: {
+				id: 0,
+				eventId: 0,
+				mutations: {
+					participants: {
+						"0": {
+							id: 0,
+							gamerTag: ''
+						}
+					},
+					players: {
+						"0": {
+							id: 0,
+							gamerTag: ''
+						}
+					}
+				}
+			}
+		}
+	}
+
+	export function getDefaultEntity(){
+		return {
+			id: 0,
+			eventId: 0,
+			mutations: {
+				participants: {
+					"0": {
+						id: 0,
+						gamerTag: ''
+					}
+				},
+				players: {
+					"0": {
+						id: 0,
+						gamerTag: ''
+					}
+				}
+			}
+		}
+	}
 }
 
 import Data = IPlayer.Data
@@ -87,16 +127,16 @@ export class Player implements IPlayer.Player{
 
 	public id: number
 	public tag: string
-	public name: string
+	public name?: string
 	public country?: string
 	public state?: string
 	public sponsor?: string
 	public participantId?: number = 0
-	public data: Entity
+	public data: Data = IPlayer.getDefaultData()
 
-	constructor(id: number, tag: string, name: string, country: string, 
-				state: string, sponsor: string, participantId: number, 
-				data: string){
+	constructor(id: number, tag: string, name?: string, country?: string, 
+				state?: string, sponsor?: string, participantId?: number, 
+				data?: string){
         if(!id)
             throw new Error('Player ID cannot be null');
 
@@ -112,27 +152,27 @@ export class Player implements IPlayer.Player{
             this.data = JSON.parse(data);
     }
 
-    static resolve(data: Entity) : Player{
+    static resolve(entity: Entity) : Player{
         try{
             let playerId = 0;
             let participantId = 0;
 
-            for(let id in data.mutations.players){
+            for(let id in entity.mutations.players){
                 if(typeof id !== 'number') break;
                 playerId = id;
             }
 
-            let playerDetails = data.mutations.players[playerId];
+            let playerDetails = entity.mutations.players[playerId];
 
-            let P = new ggPlayer(
-                parseInt(playerId),
+            let P = new Player(
+                +playerId,
                 playerDetails.gamerTag,
                 playerDetails.name,
                 playerDetails.country,
                 playerDetails.state,
                 playerDetails.prefix,
-                parseInt(data.id),
-                JSON.stringify(data)
+                +entity.id,
+                JSON.stringify(entity)
             );
             return P;
         } catch(e){
@@ -141,29 +181,29 @@ export class Player implements IPlayer.Player{
         }
     }
 
-    static get(id){
+    static get(id: number) : Promise<Player>{
         let postParams = {
             type: 'player',
             id: id
         }
 
-        return request('POST', API_URL, postParams)
+        return NI.request('POST', API_URL, postParams)
             .then(data => {
-                return resolve(data);
+                return Player.resolve(data);
             }) 
             .catch(console.error);
         
     }
 
-    static getFromIdArray(idArray) : {
+    static getFromIdArray(idArray: number[]) : Promise<Player[]>{
         let postParams = {
             type: 'players',
             idArray: idArray
         }
 
-        return request('POST', API_URL, postParams)
-            .then(data => {
-                data.map(player => { return resolve(player); });
+        return NI.request('POST', API_URL, postParams)
+            .then( (data: Entity[])  => {
+                return data.map(player => { return Player.resolve(player); });
             })
             .catch(console.error);
     }
